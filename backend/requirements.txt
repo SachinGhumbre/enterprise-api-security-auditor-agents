@@ -1,0 +1,38 @@
+# Enterprise API Security Auditor Agent - backend dependencies
+# Install with:  pip install -r backend/requirements.txt
+
+# --- Web layer ---------------------------------------------------------------
+Flask>=3.0
+flask-cors>=5.0
+python-dotenv>=1.0
+
+# --- Agent orchestration ------------------------------------------------------
+langgraph>=0.2.50
+
+# --- Vector store -------------------------------------------------------------
+# Requires a Redis Stack server (RediSearch module); plain redis will not work.
+redis>=5.0
+numpy>=1.26
+
+# --- LLM / embeddings ---------------------------------------------------------
+openai>=1.50
+
+# --- HTTP ---------------------------------------------------------------------
+requests>=2.32
+urllib3>=2.0
+
+# Makes Python use the OS certificate store instead of certifi's bundle. Needed
+# behind corporate TLS-inspection proxies, which re-sign traffic with an internal
+# root CA that is trusted by Windows but absent from certifi. Without this,
+# requests raises SSLError against endpoints that curl reaches fine.
+truststore>=0.9; python_version >= "3.10"
+
+# --- Tests ---------------------------------------------------------------------
+pytest>=8.0
+
+# Removed from the original list because nothing in this codebase imports them:
+#   langchain, langchain-google-genai, langchain_community  (no LangChain usage)
+#   chromadb                                                (Redis is the vector store)
+#   azure-core                                              (the openai SDK covers Azure)
+#   langgraph_agents                                        (unrelated PyPI package; the
+#                                                            old tests imported it by mistake)

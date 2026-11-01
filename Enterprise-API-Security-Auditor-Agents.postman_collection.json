@@ -1,0 +1,882 @@
+{
+  "info": {
+    "_postman_id": "b7e3c1a4-5d2f-4e8a-9c31-auditoragent01",
+    "name": "Enterprise API Security Auditor Agent (Meta Model API)",
+    "description": "Complete API collection for the **Enterprise API Security Auditor Agentic AI** project (Meta Global AI Developer Hackathon - *Build for Your World*).\n\nBoth agents reason on **Meta Model API**, model `muse-spark-1.3` (Muse Spark Open).\n\n## Services\n| Port | Service | Entry point |\n|------|---------|-------------|\n| 5000 | AI Agents (Audit + Remediate) | `backend/agents/init_auditor.py` |\n| 5001 | Knowledge Ingestor (RAG) | `backend/rag/knowledge_ingestor.py` |\n| 5002 | Redis Test Harness | `redis-test.py` |\n\n## Setup\nPaste your Meta key into `META_API_KEY` in `backend/.env`, then run\n`python backend/scripts/verify_meta.py` to confirm the model is reachable.\n\n## Recommended run order\n1. **00 - Health Checks** - confirms the active LLM provider and model, Redis, and Kong.\n2. **02 - Knowledge Ingestion (RAG)** - Create Index -> Ingest -> Search.\n3. **03 - AI Agent: Audit** - Run Audit (saves `audit_report` as a collection variable).\n4. **04 - AI Agent: Remediate** - Generate Remediation Plan (uses that variable).\n\nHealth responses report `dependencies.llm_provider` and `dependencies.llm_model`, so you can confirm at a glance that requests are served by Muse Spark Open.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "agents_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "knowledge_url",
+      "value": "http://localhost:5001",
+      "type": "string"
+    },
+    {
+      "key": "redis_test_url",
+      "value": "http://localhost:5002",
+      "type": "string"
+    },
+    {
+      "key": "index_name",
+      "value": "security_auditor_index",
+      "type": "string"
+    },
+    {
+      "key": "audit_report",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "meta_model",
+      "value": "muse-spark-1.3",
+      "type": "string"
+    },
+    {
+      "key": "meta_api_key",
+      "value": "DUMMYKEY",
+      "type": "string"
+    },
+    {
+      "key": "meta_base_url",
+      "value": "https://api.meta.ai/v1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Health Checks",
+      "description": "Run these first. Each reports the effective configuration and which dependencies are degraded.",
+      "item": [
+        {
+          "name": "Agents Health (5000)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{agents_url}}/api/v1/ai-agents/health",
+              "host": [
+                "{{agents_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai-agents",
+                "health"
+              ]
+            },
+            "description": "Reports the effective configuration and every dependency.\n\n**Confirms the hackathon requirement:** `dependencies.llm_provider` should be `meta` and `dependencies.llm_model` should be `muse-spark-1.3`. The test script asserts this.\n\nAlso reports `kong_mode`, `kong_services`, `policy_chunks` and `config.tls.system_trust_store`.\n\nReturns 503 with a `problems` array when `META_API_KEY` is missing."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('agents service reachable', () => pm.expect([200,503]).to.include(pm.response.code));",
+                  "const d = pm.response.json();",
+                  "const dep = d.dependencies || {};",
+                  "pm.test('running on Meta Model API', () => pm.expect(dep.llm_provider).to.eql('meta'));",
+                  "console.log('LLM provider    :', dep.llm_provider);",
+                  "console.log('LLM model       :', dep.llm_model);",
+                  "console.log('Kong mode       :', dep.kong_mode);",
+                  "console.log('Kong reachable  :', dep.kong_admin_reachable);",
+                  "console.log('Kong services   :', dep.kong_services);",
+                  "console.log('Redis reachable :', dep.redis_reachable);",
+                  "console.log('Policy chunks   :', dep.policy_chunks);",
+                  "(d.problems || []).forEach(p => console.log('PROBLEM:', p));",
+                  "(d.warnings || []).forEach(w => console.log('WARNING:', w));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Knowledge Health (5001)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{knowledge_url}}/api/v1/knowledge/health",
+              "host": [
+                "{{knowledge_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "knowledge",
+                "health"
+              ]
+            },
+            "description": "Returns 200 'ok' only when the embedding provider is configured, Redis is reachable WITH the RediSearch module, and the knowledge base directory exists. Otherwise 503 with a `problems` array naming each fault."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "pm.test('knowledge service healthy', () => pm.expect(d.status).to.eql('ok'));",
+                  "(d.problems || []).forEach(p => console.log('PROBLEM:', p));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Redis Index Info (5002)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{redis_test_url}}/redis/index_info",
+              "host": [
+                "{{redis_test_url}}"
+              ],
+              "path": [
+                "redis",
+                "index_info"
+              ]
+            },
+            "description": "Reports the Redis host/port actually in use, which .env file was loaded, and whether the vector index exists."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 - Redis Test Harness (5002)",
+      "description": "Standalone Redis checks that do not require the backend package. Useful for confirming connectivity before touching the RAG pipeline.",
+      "item": [
+        {
+          "name": "Create Index",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"index_name\": \"{{index_name}}\",\n    \"prefix\": \"embedding:\",\n    \"vector_dimensions\": 1536,\n    \"recreate\": false\n}"
+            },
+            "url": {
+              "raw": "{{redis_test_url}}/redis/create_index",
+              "host": [
+                "{{redis_test_url}}"
+              ],
+              "path": [
+                "redis",
+                "create_index"
+              ]
+            },
+            "description": "All fields optional. `recreate: true` drops and rebuilds the index while keeping the documents. Returns 201 when created, 200 when it already existed."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Embedding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"my first embedding\",\n    \"embedding\": {\n        \"embeddingKey\": \"embeddingValue\"\n    }\n}"
+            },
+            "url": {
+              "raw": "{{redis_test_url}}/redis/add_embedding",
+              "host": [
+                "{{redis_test_url}}"
+              ],
+              "path": [
+                "redis",
+                "add_embedding"
+              ]
+            },
+            "description": "Stores an arbitrary text/embedding pair as a Redis hash under `embedding:<uuid>`.\n\nNOTE: this writes a JSON blob, not a FLOAT32 vector, so documents added here are NOT returned by KNN search. It verifies connectivity and key layout only. Use `02 - Knowledge Ingestion` for real vectors."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Embeddings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{redis_test_url}}/redis/all_embeddings?limit=10&include_vector=false",
+              "host": [
+                "{{redis_test_url}}"
+              ],
+              "path": [
+                "redis",
+                "all_embeddings"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Cap the number of documents returned"
+                },
+                {
+                  "key": "include_vector",
+                  "value": "false",
+                  "description": "true decodes the float32 vector into 1536 numbers per chunk - large payload"
+                }
+              ]
+            },
+            "description": "Lists every `embedding:*` key via SCAN (not FT.SEARCH, so there is no 10-document default cap).\n\nHandles both document shapes that share the prefix:\n- docs from `/redis/add_embedding`, whose `embedding` field is a JSON blob\n- docs from the knowledge ingestor, whose `vector` field is packed FLOAT32 bytes\n\n`vector_dimensions` is derived from the byte length (4 bytes per float32), so a value of 0 means the document has no real vector and will NOT be returned by KNN search.\n\nThe connection uses decode_responses=False deliberately: float32 vector bytes are not valid UTF-8, and decoding them raises \"'utf-8' codec can't decode byte ...\"."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete All Embeddings",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{redis_test_url}}/redis/all_embeddings",
+              "host": [
+                "{{redis_test_url}}"
+              ],
+              "path": [
+                "redis",
+                "all_embeddings"
+              ]
+            },
+            "description": "DESTRUCTIVE - removes every embedding, including the ingested policy corpus. Re-run the knowledge ingestion afterwards."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Knowledge Ingestion / RAG (5001)",
+      "description": "The retrieval-augmented generation pipeline. Run Create Index -> Ingest -> Search in order.",
+      "item": [
+        {
+          "name": "Create Vector Index",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"recreate\": false\n}"
+            },
+            "url": {
+              "raw": "{{knowledge_url}}/api/v1/knowledge/index",
+              "host": [
+                "{{knowledge_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "knowledge",
+                "index"
+              ]
+            },
+            "description": "Creates the RediSearch index (`content`, `text`, `source` text fields; `vector` FLAT/FLOAT32/COSINE; `metadata` tag) over the `embedding:` key prefix.\n\nOptional body: `index_name`, `prefix`, `vector_dimensions`, `recreate`. Ingestion calls this automatically, so it is only needed for explicit rebuilds."
+          },
+          "response": []
+        },
+        {
+          "name": "Ingest Security Policies",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"reset\": true\n}"
+            },
+            "url": {
+              "raw": "{{knowledge_url}}/api/v1/knowledge/ingest",
+              "host": [
+                "{{knowledge_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "knowledge",
+                "ingest"
+              ]
+            },
+            "description": "Chunks every policy file in `backend/knowledge_base/`, embeds each chunk and stores it in Redis.\n\nBody (optional):\n- `reset` (bool) - delete existing chunks first, avoiding duplicates on re-ingest\n- `knowledge_dir` (string) - override the source directory\n\nThe `knowledge_base/ALL/` subdirectory is skipped deliberately: it duplicates the top-level policy files verbatim and would double every chunk."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ingestion succeeded', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "pm.test('chunks were stored', () => pm.expect(d.total_chunks).to.be.above(0));",
+                  "console.log('Provider    :', d.embedding_provider);",
+                  "console.log('Files       :', d.files_processed);",
+                  "console.log('Chunks      :', d.total_chunks);",
+                  "console.log('Elapsed (s) :', d.elapsed_seconds);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Policies (RAG retrieval)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"query\": \"Which plugin enforces authentication on a Kong service?\",\n    \"top_k\": 3\n}"
+            },
+            "url": {
+              "raw": "{{knowledge_url}}/api/v1/knowledge/search",
+              "host": [
+                "{{knowledge_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "knowledge",
+                "search"
+              ]
+            },
+            "description": "Cosine KNN search over the policy corpus - this is the request that proves RAG works.\n\nReturns each hit with `source` (origin file), `score` (similarity, higher is better) and the chunk `content`. The audit agent issues the same query internally to ground its verdicts.\n\nTry also: `rate limiting thresholds`, `GDPR data privacy requirements`, `input validation rules`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('search returned hits', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "pm.test('at least one result', () => pm.expect(d.count).to.be.above(0));",
+                  "(d.results || []).forEach(r => console.log(r.score, '|', r.source, '|', String(r.content).slice(0, 80)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Embeddings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{knowledge_url}}/api/v1/knowledge/get_all_embeddings?limit=5&include_vector=false",
+              "host": [
+                "{{knowledge_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "knowledge",
+                "get_all_embeddings"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "description": "Cap the number of chunks returned"
+                },
+                {
+                  "key": "include_vector",
+                  "value": "false",
+                  "description": "true returns all 1536 raw floats per chunk - large payload"
+                }
+              ]
+            },
+            "description": "Inventory of stored chunks with their source file and metadata. Leave `include_vector=false` unless you specifically need the raw float arrays."
+          },
+          "response": []
+        },
+        {
+          "name": "Knowledge Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{knowledge_url}}/api/v1/knowledge/stats",
+              "host": [
+                "{{knowledge_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "knowledge",
+                "stats"
+              ]
+            },
+            "description": "Index name, document count, stored chunk count, vector dimensions, and whether the RediSearch module is present."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete All Embeddings",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{knowledge_url}}/api/v1/knowledge/embeddings",
+              "host": [
+                "{{knowledge_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "knowledge",
+                "embeddings"
+              ]
+            },
+            "description": "DESTRUCTIVE - clears the policy corpus. The index definition is left in place, so a re-ingest does not need to recreate it."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - AI Agent: Audit (5000)",
+      "description": "The Audit Agent: Perceive (Kong) -> Retrieve (RAG) -> Reason (LLM) -> Plan -> Act.",
+      "item": [
+        {
+          "name": "Kong Service Inventory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{agents_url}}/api/v1/ai-agents/kong/services",
+              "host": [
+                "{{agents_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai-agents",
+                "kong",
+                "services"
+              ]
+            },
+            "description": "The service/plugin inventory the audit will run against.\n\nBuilt from three Kong requests (services, routes, plugins) joined in memory, so the cost does not grow with the number of services.\n\n`service_plugins` is the *effective* plugin set: plugins bound directly to the service, plugins bound to any of its routes, and gateway-wide plugins. Most Konnect estates bind plugins at the route level, so without the route rollup a service would look completely unprotected.\n\n`source` is `kong_konnect` / `kong_onprem` when live, or `cached_file` with a `warning` when the Admin API is unreachable."
+          },
+          "response": []
+        },
+        {
+          "name": "Run Security Audit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"selected_standards\": [\n        \"OWASP API Top 10\",\n        \"GDPR\",\n        \"NIST\"\n    ],\n    \"top_k\": 4\n}"
+            },
+            "url": {
+              "raw": "{{agents_url}}/api/v1/ai-agents/audit",
+              "host": [
+                "{{agents_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai-agents",
+                "audit"
+              ]
+            },
+            "description": "Runs the full audit graph against every service on the Kong control plane.\n\nBody (all optional):\n- `selected_standards` - standards in scope; defaults to [\"All Security Standards\"]\n- `service_names` - audit only these services (see the next request)\n- `top_k` - policy chunks retrieved per service (default 4)\n- `kong_data` - inventory override; skips the Kong Admin API entirely\n\nCost scales with the estate: one LLM call per service. Measured against a Konnect control plane with 8 services this takes ~57s. Use `service_names` to narrow it during development.\n\nEach audited service carries `policy_sources`, naming the policy files that grounded the verdict. `kong_source` reports provenance - `kong_konnect`, `kong_onprem`, `request` or `cached_file`.\n\nThe test script saves the report into the `audit_report` collection variable."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('audit succeeded', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "pm.test('report contains services', () => pm.expect(Object.keys(d.audit_report || {}).length).to.be.above(0));",
+                  "pm.collectionVariables.set('audit_report', JSON.stringify(d.audit_report));",
+                  "console.log('Kong source  :', d.kong_source);",
+                  "console.log('Summary      :', JSON.stringify(d.summary));",
+                  "(d.warnings || []).forEach(w => console.log('WARNING:', w));",
+                  "console.log('audit_report saved to collection variable.');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Run Audit (offline / explicit inventory)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"selected_standards\": [\"OWASP API Top 10\"],\n    \"kong_data\": [\n        {\n            \"service_name\": \"PaymentService\",\n            \"service_id\": \"demo-payment-0001\",\n            \"service_plugins\": [\"key-auth\"]\n        },\n        {\n            \"service_name\": \"PublicDocsService\",\n            \"service_id\": \"demo-docs-0002\",\n            \"service_plugins\": []\n        }\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{agents_url}}/api/v1/ai-agents/audit",
+              "host": [
+                "{{agents_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai-agents",
+                "audit"
+              ]
+            },
+            "description": "Audits an inventory supplied inline, bypassing the Kong Admin API. Use this to demo the agent when the Kong gateway is unreachable, or to test specific plugin combinations.\n\n`PublicDocsService` has no plugins at all and should come back non-compliant across the board - a good smoke test that the reasoning step is genuinely evaluating the input."
+          },
+          "response": []
+        },
+        {
+          "name": "Run Audit (selected services only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"selected_standards\": [\n        \"OWASP API Top 10\"\n    ],\n    \"service_names\": [\n        \"Healthcheck\",\n        \"CognizantAIGatewayService\"\n    ]\n}"
+            },
+            "url": {
+              "raw": "{{agents_url}}/api/v1/ai-agents/audit",
+              "host": [
+                "{{agents_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai-agents",
+                "audit"
+              ]
+            },
+            "description": "Audits only the named Kong services. Names are matched case-insensitively against the service name in Kong.\n\nThis is the fast path for iterating: a full 8-service audit costs 8 LLM calls, while two services cost two (~17s measured).\n\nRun `Kong Service Inventory` first to see the available service names."
+          },
+          "response": []
+        },
+        {
+          "name": "Last Audit Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{agents_url}}/api/v1/ai-agents/audit/report",
+              "host": [
+                "{{agents_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai-agents",
+                "audit",
+                "report"
+              ]
+            },
+            "description": "Replays the most recent report from `backend/artifacts/langgraph_audit_report.json` without re-running the LLM. Returns 404 if no audit has run yet."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - AI Agent: Remediate (5000)",
+      "description": "The Remediation Agent: Perceive (findings) -> Retrieve (RAG) -> Reason (LLM) -> Plan (severity sort) -> Act.",
+      "item": [
+        {
+          "name": "Generate Remediation Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"audit_report\": {{audit_report}}\n}"
+            },
+            "url": {
+              "raw": "{{agents_url}}/api/v1/ai-agents/remediate",
+              "host": [
+                "{{agents_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai-agents",
+                "remediate"
+              ]
+            },
+            "description": "Turns non-compliant findings into an actionable plan. Returns a JSON array sorted Critical first, each item carrying serviceName, policyName, issue, missingPlugin, recommendedAction, severity, owner, estimatedEffort, impact and securityStandardReference.\n\nFindings are sent to the model in batches of `REMEDIATION_BATCH_SIZE` (default 5). A single call for all findings grows with the estate and silently truncates past the token cap, which produces invalid JSON and loses the whole plan. If a batch still fails, it is retried one finding at a time so a single bad response cannot discard the group.\n\n`{{audit_report}}` is populated by the Run Security Audit request."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('remediation succeeded', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "if (Array.isArray(d)) {",
+                  "  console.log('Actions:', d.length);",
+                  "  d.forEach(i => console.log('[' + i.severity + ']', i.serviceName, '-', i.policyName, '->', i.missingPlugin));",
+                  "} else {",
+                  "  console.log('Response:', JSON.stringify(d).slice(0, 400));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generate Remediation Plan (from saved report)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{agents_url}}/api/v1/ai-agents/remediate?envelope=true",
+              "host": [
+                "{{agents_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai-agents",
+                "remediate"
+              ],
+              "query": [
+                {
+                  "key": "envelope",
+                  "value": "true",
+                  "description": "Wrap the array in an object with summary, findings_count and error detail"
+                }
+              ]
+            },
+            "description": "With an empty body the agent falls back to the last audit report on disk, so remediation can be demoed standalone.\n\n`envelope=true` returns `{remediation_plan, summary, findings_count, note, error}` instead of a bare array - more useful for debugging. The dashboard uses the bare-array form."
+          },
+          "response": []
+        },
+        {
+          "name": "Last Remediation Plan",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{agents_url}}/api/v1/ai-agents/remediate/plan",
+              "host": [
+                "{{agents_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai-agents",
+                "remediate",
+                "plan"
+              ]
+            },
+            "description": "Replays the most recent plan from `backend/artifacts/langgraph_remediation_plan.json` without re-running the LLM."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Meta Model API (direct)",
+      "description": "Calls **Meta Model API directly**, bypassing this project entirely.\n\nModel is driven by the `{{meta_model}}` collection variable (currently `muse-spark-1.3`).\n\n### Models available to this key\nConfirmed via `GET /v1/models`:\n- **Chat / reasoning:** `muse-spark-1.3`, `muse-spark-1.3-contributor`, `muse-spark-1.2`, `muse-spark-1.2-contributor`, `muse-spark-1.1`\n- Other modalities: `muse-wonder-1.0`, `muse-image-1.0`, `muse-voice-transcribe-1.0`, `sam-3.1`\n\n`muse-spark-open` is **not** served by the Model API - it is an open-weights model intended to be self-hosted, so `meta-models/muse-spark-open-1026` returns `model_not_found`.\n\n**If a response body starts with `<`** (an HTML page from Zscaler, Netskope or similar), the request was blocked before leaving your network. The key is fine, Meta never saw the request, and dashboard usage stays at 0.",
+      "item": [
+        {
+          "name": "1. List Models (cheapest key check)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{meta_api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{meta_base_url}}/models",
+              "host": [
+                "{{meta_base_url}}"
+              ],
+              "path": [
+                "models"
+              ]
+            },
+            "description": "200 = key valid. 401 = key invalid or expired. HTML body = proxy block, not an auth problem."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "if (body.trim().startsWith('<')) {",
+                  "  console.log('PROXY BLOCK - the request never reached Meta.');",
+                  "  console.log('Body starts:', body.slice(0, 140));",
+                  "  pm.test('reached Meta (not a proxy block)', function () {",
+                  "    pm.expect.fail('An HTML page was returned by a network proxy, not Meta. '",
+                  "      + 'Your key is fine; the request was blocked before leaving the network. '",
+                  "      + 'No usage will appear on the Meta dashboard. Try a phone hotspot.');",
+                  "  });",
+                  "} else {",
+                  "  pm.test('key accepted', () => pm.response.to.have.status(200));",
+                  "  console.log(body.slice(0, 600));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Chat Completion (Muse Spark 1.3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{meta_api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"model\": \"{{meta_model}}\",\n    \"messages\": [\n        {\n            \"role\": \"user\",\n            \"content\": \"Reply with exactly this JSON and nothing else: {\\\"ok\\\":true}\"\n        }\n    ],\n    \"max_tokens\": 100\n}"
+            },
+            "url": {
+              "raw": "{{meta_base_url}}/chat/completions",
+              "host": [
+                "{{meta_base_url}}"
+              ],
+              "path": [
+                "chat",
+                "completions"
+              ]
+            },
+            "description": "The exact request `backend/common/llm.py` sends. A 200 here means usage WILL appear on the Meta dashboard - check the `usage` object."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.text();",
+                  "if (body.trim().startsWith('<')) {",
+                  "  console.log('PROXY BLOCK - the request never reached Meta.');",
+                  "  console.log('Body starts:', body.slice(0, 140));",
+                  "  pm.test('reached Meta (not a proxy block)', function () {",
+                  "    pm.expect.fail('An HTML page was returned by a network proxy, not Meta. '",
+                  "      + 'Your key is fine; the request was blocked before leaving the network. '",
+                  "      + 'No usage will appear on the Meta dashboard. Try a phone hotspot.');",
+                  "  });",
+                  "} else {",
+                  "  pm.test('completion succeeded', () => pm.response.to.have.status(200));",
+                  "  const d = pm.response.json();",
+                  "  console.log('model :', d.model);",
+                  "  console.log('reply :', d.choices && d.choices[0] && d.choices[0].message.content);",
+                  "  console.log('usage :', JSON.stringify(d.usage));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Structured Audit Prompt (what the agent sends)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{meta_api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"model\": \"{{meta_model}}\",\n    \"messages\": [\n        {\n            \"role\": \"system\",\n            \"content\": \"You are an autonomous API security auditor for Kong Gateway. Respond with STRICT JSON only: {\\\"serviceName\\\": \\\"<name>\\\", \\\"policies\\\": [{\\\"policy_name\\\": \\\"<policy>\\\", \\\"comply\\\": true|false, \\\"missing_plugins\\\": [\\\"<plugin>\\\"], \\\"details\\\": \\\"<why>\\\"}]}\"\n        },\n        {\n            \"role\": \"user\",\n            \"content\": \"Kong service name: PaymentService\\nEnabled plugins: ['key-auth']\\nPolicy excerpt: Authentication Policy v1.0 requires one of key-auth, jwt or oauth2, and mandates jwt for services handling payment data.\\nAudit this service.\"\n        }\n    ],\n    \"max_tokens\": 1200\n}"
+            },
+            "url": {
+              "raw": "{{meta_base_url}}/chat/completions",
+              "host": [
+                "{{meta_base_url}}"
+              ],
+              "path": [
+                "chat",
+                "completions"
+              ]
+            },
+            "description": "Mirrors the Audit Agent's real prompt, so you can watch Muse Spark Open produce the structured compliance verdict the agent depends on."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

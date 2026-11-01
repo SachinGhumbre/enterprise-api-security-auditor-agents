@@ -1,0 +1,73 @@
+[
+  {
+    "service_name": "orders-api",
+    "service_id": "1d79ca18-deda-5a33-ab26-3576608c95f3",
+    "service_plugins": [
+      "ai-mcp-proxy"
+    ],
+    "route_count": 5
+  },
+  {
+    "service_name": "AM_FCA_SF",
+    "service_id": "4c688dae-83f0-4dc8-87f5-55ad71614af3",
+    "service_plugins": [
+      "ip-restriction",
+      "openid-connect",
+      "rate-limiting",
+      "request-transformer"
+    ],
+    "route_count": 5
+  },
+  {
+    "service_name": "Healthcheck",
+    "service_id": "72195e31-b0eb-49b5-80ae-48f9eba32292",
+    "service_plugins": [],
+    "route_count": 1
+  },
+  {
+    "service_name": "users-api",
+    "service_id": "79934469-007a-5a91-8968-d90e670fa91f",
+    "service_plugins": [
+      "ai-mcp-proxy"
+    ],
+    "route_count": 6
+  },
+  {
+    "service_name": "MyMetaAIGatewayService",
+    "service_id": "7fbd236b-de4d-4402-9cee-c31563749d16",
+    "service_plugins": [
+      "acl",
+      "ai-proxy-advanced",
+      "key-auth"
+    ],
+    "route_count": 1
+  },
+  {
+    "service_name": "new-service-20260525181340158",
+    "service_id": "9d454460-62ec-4f0a-b04e-9c868de4d2b8",
+    "service_plugins": [],
+    "route_count": 1
+  },
+  {
+    "service_name": "kongtest-api",
+    "service_id": "bd1f69f5-874a-466a-bcf5-394fdc56a5a4",
+    "service_plugins": [
+      "basic-auth",
+      "ip-restriction",
+      "key-auth",
+      "rate-limiting",
+      "request-transformer"
+    ],
+    "route_count": 3
+  },
+  {
+    "service_name": "swagger-petstore-api",
+    "service_id": "e9a5f4ec-e173-4310-8c5f-60e6f4a2dd44",
+    "service_plugins": [
+      "key-auth",
+      "rate-limiting",
+      "request-transformer"
+    ],
+    "route_count": 15
+  }
+]

@@ -1,0 +1,195 @@
+{
+  "orders-api:policy:orders-api": {
+    "serviceName": "orders-api",
+    "policies": [
+      {
+        "policy_name": "OWASP API Top 10",
+        "comply": false,
+        "missing_plugins": [
+          "JWT Authentication",
+          "OAuth2 / OpenID Connect"
+        ],
+        "details": "Service only enables ai-mcp-proxy, missing mandatory authentication plugins JWT Authentication and OAuth2 / OpenID Connect required for OWASP API Top 10."
+      }
+    ],
+    "service_plugins": [
+      "ai-mcp-proxy"
+    ],
+    "policy_sources": [
+      "03_rate_limiting.txt",
+      "kong_api_security_mapping.md"
+    ]
+  },
+  "AM_FCA_SF:policy:AM_FCA_SF": {
+    "serviceName": "AM_FCA_SF",
+    "policies": [
+      {
+        "policy_name": "OWASP API Top 10",
+        "comply": false,
+        "missing_plugins": [
+          "jwt"
+        ],
+        "details": "OWASP API Top 10 mapping marks JWT Authentication as Mandatory; service has openid-connect but lacks jwt"
+      }
+    ],
+    "service_plugins": [
+      "ip-restriction",
+      "openid-connect",
+      "rate-limiting",
+      "request-transformer"
+    ],
+    "policy_sources": [
+      "03_rate_limiting.txt",
+      "kong_api_security_mapping.md"
+    ]
+  },
+  "Healthcheck:policy:Healthcheck": {
+    "serviceName": "Healthcheck",
+    "policies": [
+      {
+        "policy_name": "OWASP API Top 10",
+        "comply": false,
+        "missing_plugins": [
+          "JWT Authentication",
+          "OAuth2 / OpenID Connect"
+        ],
+        "details": "No plugins enabled; JWT Authentication and OAuth2 / OpenID Connect are Mandatory for OWASP API Top 10 per mapping."
+      }
+    ],
+    "service_plugins": [],
+    "policy_sources": [
+      "kong_api_security_mapping.md"
+    ]
+  },
+  "users-api:policy:users-api": {
+    "serviceName": "users-api",
+    "policies": [
+      {
+        "policy_name": "OWASP API Top 10",
+        "comply": false,
+        "missing_plugins": [
+          "JWT Authentication",
+          "OAuth2 / OpenID Connect"
+        ],
+        "details": "Service enables only ai-mcp-proxy, missing JWT Authentication and OAuth2 / OpenID Connect which are listed as Mandatory for OWASP API Top 10."
+      }
+    ],
+    "service_plugins": [
+      "ai-mcp-proxy"
+    ],
+    "policy_sources": [
+      "03_rate_limiting.txt",
+      "kong_api_security_mapping.md"
+    ]
+  },
+  "MyMetaAIGatewayService:policy:MyMetaAIGatewayService": {
+    "serviceName": "MyMetaAIGatewayService",
+    "policies": [
+      {
+        "policy_name": "Authentication Policy v1.0",
+        "comply": false,
+        "missing_plugins": [
+          "jwt",
+          "oauth2"
+        ],
+        "details": "Service has key-auth but lacks jwt and oauth2, which are mandatory per Authentication Policy v1.0 and listed as Mandatory for OWASP API Top 10 (JWT Authentication, OAuth2 / OpenID Connect)."
+      },
+      {
+        "policy_name": "Authorization Policy v1.0",
+        "comply": true,
+        "missing_plugins": [],
+        "details": ""
+      }
+    ],
+    "service_plugins": [
+      "acl",
+      "ai-proxy-advanced",
+      "key-auth"
+    ],
+    "policy_sources": [
+      "01_authentication_policy.txt",
+      "02_authorization_policy.txt",
+      "kong_api_security_mapping.md"
+    ]
+  },
+  "new-service-20260525181340158:policy:new-service-20260525181340158": {
+    "serviceName": "new-service-20260525181340158",
+    "policies": [
+      {
+        "policy_name": "OWASP API Top 10",
+        "comply": false,
+        "missing_plugins": [
+          "JWT Authentication",
+          "OAuth2 / OpenID Connect"
+        ],
+        "details": "No plugins enabled; OWASP API Top 10 requires Mandatory authentication via JWT Authentication and OAuth2 / OpenID Connect."
+      }
+    ],
+    "service_plugins": [],
+    "policy_sources": [
+      "kong_api_security_mapping.md"
+    ]
+  },
+  "kongtest-api:policy:kongtest-api": {
+    "serviceName": "kongtest-api",
+    "policies": [
+      {
+        "policy_name": "Authentication Policy v1.0",
+        "comply": false,
+        "missing_plugins": [
+          "jwt",
+          "oauth2"
+        ],
+        "details": "Service has key-auth but lacks jwt and oauth2 which are Mandatory for OWASP API Top 10; basic-auth does not satisfy the policy requirement"
+      },
+      {
+        "policy_name": "Rate Limiting & Spike Arrest Policy v1.0",
+        "comply": true,
+        "missing_plugins": [],
+        "details": ""
+      }
+    ],
+    "service_plugins": [
+      "basic-auth",
+      "ip-restriction",
+      "key-auth",
+      "rate-limiting",
+      "request-transformer"
+    ],
+    "policy_sources": [
+      "01_authentication_policy.txt",
+      "03_rate_limiting.txt",
+      "kong_api_security_mapping.md"
+    ]
+  },
+  "swagger-petstore-api:policy:swagger-petstore-api": {
+    "serviceName": "swagger-petstore-api",
+    "policies": [
+      {
+        "policy_name": "Authentication Policy v1.0",
+        "comply": false,
+        "missing_plugins": [
+          "jwt",
+          "oauth2"
+        ],
+        "details": "Service has key-auth but OWASP API Top 10 mandates JWT Authentication and OAuth2/OpenID Connect as Mandatory per mapping; jwt and oauth2 plugins are missing."
+      },
+      {
+        "policy_name": "Rate Limiting & Spike Arrest Policy v1.0",
+        "comply": true,
+        "missing_plugins": [],
+        "details": ""
+      }
+    ],
+    "service_plugins": [
+      "key-auth",
+      "rate-limiting",
+      "request-transformer"
+    ],
+    "policy_sources": [
+      "01_authentication_policy.txt",
+      "03_rate_limiting.txt",
+      "kong_api_security_mapping.md"
+    ]
+  }
+}
