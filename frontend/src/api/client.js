@@ -6,6 +6,11 @@
  *   REACT_APP_AGENTS_URL=http://localhost:5000
  *   REACT_APP_KNOWLEDGE_URL=http://localhost:5001
  *   REACT_APP_REDIS_TEST_URL=http://localhost:5002
+ *   REACT_APP_API_KEY=<operator or admin key>  (only when the backends
+ *     enforce API-key auth; baked in at build time, so prefer sign-in)
+ *
+ * The sign-in screen stores the key in sessionStorage (cleared with the
+ * tab); every request below attaches it as X-API-Key when present.
  */
 
 const env = (typeof process !== 'undefined' && process.env) || {};
@@ -13,6 +18,51 @@ const env = (typeof process !== 'undefined' && process.env) || {};
 export const AGENTS_URL = env.REACT_APP_AGENTS_URL || 'http://localhost:5000';
 export const KNOWLEDGE_URL = env.REACT_APP_KNOWLEDGE_URL || 'http://localhost:5001';
 export const REDIS_TEST_URL = env.REACT_APP_REDIS_TEST_URL || 'http://localhost:5002';
+
+const API_KEY_STORAGE = 'easa.api_key';
+
+export function getApiKey() {
+  try {
+    return sessionStorage.getItem(API_KEY_STORAGE) || env.REACT_APP_API_KEY || '';
+  } catch (err) {
+    return env.REACT_APP_API_KEY || '';
+  }
+}
+
+export function setApiKey(key) {
+  try {
+    if (key) {
+      sessionStorage.setItem(API_KEY_STORAGE, key);
+    } else {
+      sessionStorage.removeItem(API_KEY_STORAGE);
+    }
+  } catch (err) {
+    // Private browsing etc: the app still works, the key just won't persist.
+  }
+}
+
+let onUnauthorized = null;
+
+/** App-level hook (sign-out + notice) fired on HTTP 401. */
+export function setOnUnauthorized(handler) {
+  onUnauthorized = handler;
+}
+
+/** Lightweight auth probe used by sign-in; never fires the hook itself. */
+export async function probeAuth(baseUrl, key, timeout = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const headers = key ? { 'X-API-Key': key } : undefined;
+    const response = await fetch(`${baseUrl}/api/v1/ai-agents/llm/calls?limit=1`, {
+      headers,
+      signal: controller.signal,
+    });
+    return response.status;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /** Audit and remediation invoke an LLM per service, so they need a long ceiling. */
 const DEFAULT_TIMEOUT_MS = 300000;
@@ -31,9 +81,13 @@ async function request(url, { method = 'GET', body, timeout = DEFAULT_TIMEOUT_MS
   const timer = setTimeout(() => controller.abort(), timeout);
 
   try {
+    const headers = {};
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    const apiKey = getApiKey();
+    if (apiKey) headers['X-API-Key'] = apiKey;
     const response = await fetch(url, {
       method,
-      headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     });
@@ -51,7 +105,15 @@ async function request(url, { method = 'GET', body, timeout = DEFAULT_TIMEOUT_MS
     if (!response.ok) {
       const detail =
         (payload && (payload.error || payload.message)) || `Request failed (${response.status})`;
-      throw new ApiError(detail, response.status, payload);
+      const error = new ApiError(detail, response.status, payload);
+      if (response.status === 401 && typeof onUnauthorized === 'function') {
+        try {
+          onUnauthorized(error);
+        } catch (hookErr) {
+          // Never let the hook mask the original failure.
+        }
+      }
+      throw error;
     }
     return payload;
   } catch (err) {
@@ -134,5 +196,80 @@ export const agents = {
   lastRemediationPlan: () =>
     request(`${AGENTS_URL}/api/v1/ai-agents/remediate/plan`, { timeout: 30000 }),
 };
+
+/* --- Multi-agent assessments -------------------------------------------------- */
+
+const ASSESS = `${AGENTS_URL}/api/v1/ai-agents/assess`;
+
+export const assess = {
+  list: () => request(ASSESS, { timeout: 30000 }),
+
+  start: (payload) =>
+    request(`${ASSESS}?async=true`, { method: 'POST', body: payload || {} }),
+
+  status: (id) => request(`${ASSESS}/${id}`, { timeout: 30000 }),
+
+  details: (id) => request(`${ASSESS}/${id}/details`, { timeout: 30000 }),
+
+  resume: (id, { decision, reviewer, note } = {}) =>
+    request(`${ASSESS}/${id}/resume`, {
+      method: 'POST',
+      body: { decision, reviewer, note },
+    }),
+
+  executiveSummary: (id) =>
+    request(`${ASSESS}/${id}/executive-summary`, { method: 'POST', body: {} }),
+
+  changes: (id) => request(`${ASSESS}/${id}/changes`, { timeout: 30000 }),
+
+  approveChange: (id, changeId, reviewer, note) =>
+    request(`${ASSESS}/${id}/changes/${changeId}/approve`, {
+      method: 'POST',
+      body: { reviewer, note },
+    }),
+
+  executeChange: (id, changeId, mode) =>
+    request(`${ASSESS}/${id}/changes/${changeId}/execute`, {
+      method: 'POST',
+      body: { mode },
+    }),
+
+  transitionRisk: (id, entryId, toState, actor, note) =>
+    request(`${ASSESS}/${id}/risk/${entryId}/transition`, {
+      method: 'POST',
+      body: { to_state: toState, actor, note },
+    }),
+};
+
+/* --- Model usage & evaluation ----------------------------------------------- */
+
+export const models = {
+  calls: (limit = 100) =>
+    request(`${AGENTS_URL}/api/v1/ai-agents/llm/calls?limit=${limit}`, { timeout: 30000 }),
+
+  policy: () => request(`${AGENTS_URL}/api/v1/ai-agents/llm/policy`, { timeout: 30000 }),
+
+  retrievalEval: (store = 'fake') =>
+    request(
+      `${AGENTS_URL}/api/v1/ai-agents/eval/retrieval?store=${store}`,
+      { timeout: 120000 }
+    ),
+};
+
+export function rememberAssessment(id) {
+  try {
+    if (id) sessionStorage.setItem('easa.last_assessment', id);
+  } catch (err) {
+    // ignore
+  }
+}
+
+export function lastAssessment() {
+  try {
+    return sessionStorage.getItem('easa.last_assessment') || '';
+  } catch (err) {
+    return '';
+  }
+}
 
 export { ApiError };

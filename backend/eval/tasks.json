@@ -1,0 +1,152 @@
+[
+  {
+    "id": "verdict-auth-missing",
+    "kind": "verdict",
+    "task": "security_investigation",
+    "service": {"service_name": "SvcA", "service_plugins": ["key-auth"]},
+    "standards": ["OWASP API Top 10"],
+    "excerpts": "Authentication Policy v1.0: services must enable jwt or oauth2 for token-based authentication. key-auth alone is weak.",
+    "expected": {
+      "policies": [
+        {"policy_name_contains": "Auth", "comply": false, "missing_any_of": ["jwt"]}
+      ]
+    },
+    "ideal": {
+      "serviceName": "SvcA",
+      "policies": [
+        {"policy_name": "Authentication Policy", "comply": false,
+         "missing_plugins": ["jwt"], "details": "jwt is required but not enabled."}
+      ]
+    },
+    "flawed": {
+      "serviceName": "SvcA",
+      "policies": [
+        {"policy_name": "Authentication Policy", "comply": true,
+         "missing_plugins": [], "details": ""}
+      ]
+    }
+  },
+  {
+    "id": "verdict-compliant",
+    "kind": "verdict",
+    "task": "security_investigation",
+    "service": {"service_name": "SvcC", "service_plugins": ["jwt", "rate-limiting", "http-log"]},
+    "standards": ["OWASP API Top 10"],
+    "excerpts": "Authentication Policy v1.0: services must enable jwt or oauth2. Rate Limiting Policy: services must enable rate-limiting. Logging Policy: services must enable an http-log, tcp-log or file-log plugin.",
+    "expected": {
+      "policies": [
+        {"policy_name_contains": "Auth", "comply": true, "missing_any_of": []}
+      ]
+    },
+    "ideal": {
+      "serviceName": "SvcC",
+      "policies": [
+        {"policy_name": "Authentication Policy", "comply": true,
+         "missing_plugins": [], "details": ""}
+      ]
+    },
+    "flawed": {
+      "serviceName": "SvcC",
+      "policies": [
+        {"policy_name": "Authentication Policy", "comply": false,
+         "missing_plugins": ["oauth2"], "details": "oauth2 missing."}
+      ]
+    }
+  },
+  {
+    "id": "verdict-no-hallucination",
+    "kind": "verdict",
+    "task": "security_investigation",
+    "service": {"service_name": "SvcD", "service_plugins": ["jwt"]},
+    "standards": ["OWASP API Top 10"],
+    "excerpts": "Authentication Policy v1.0: services must enable jwt or oauth2 for token-based authentication.",
+    "expected": {
+      "policies": [
+        {"policy_name_contains": "Auth", "comply": true, "missing_any_of": []}
+      ]
+    },
+    "ideal": {
+      "serviceName": "SvcD",
+      "policies": [
+        {"policy_name": "Authentication Policy", "comply": true,
+         "missing_plugins": [], "details": ""}
+      ]
+    },
+    "flawed": {
+      "serviceName": "SvcD",
+      "policies": [
+        {"policy_name": "Authentication Policy", "comply": false,
+         "missing_plugins": ["jwt"], "details": "jwt missing."}
+      ]
+    }
+  },
+  {
+    "id": "remediation-basic",
+    "kind": "remediation",
+    "task": "remediation_planning",
+    "findings": [
+      {"serviceName": "SvcA", "policyName": "Authentication Policy",
+       "details": "jwt is required but not enabled.", "missingPlugins": ["jwt"],
+       "severity": "Critical"}
+    ],
+    "excerpts": "Authentication Policy v1.0: services must enable jwt or oauth2.",
+    "expected": {"item_count": 1, "service_names": ["SvcA"], "severities": ["Critical"]},
+    "ideal": [
+      {"serviceName": "SvcA", "policyName": "Authentication Policy",
+       "issue": "jwt is required but not enabled.", "missingPlugin": "jwt",
+       "recommendedAction": "Enable the jwt plugin on SvcA.",
+       "severity": "Critical", "owner": "API Gateway Team",
+       "estimatedEffort": "2 hours", "impact": "Unauthenticated access possible.",
+       "securityStandardReference": "OWASP API2:2023 Broken Authentication"}
+    ],
+    "flawed": [
+      {"serviceName": "SvcA", "policyName": "Authentication Policy",
+       "issue": "auth weak.", "severity": "Critical"}
+    ]
+  },
+  {
+    "id": "remediation-batch",
+    "kind": "remediation",
+    "task": "remediation_planning",
+    "findings": [
+      {"serviceName": "SvcA", "policyName": "Authentication Policy",
+       "details": "jwt missing.", "missingPlugins": ["jwt"], "severity": "Critical"},
+      {"serviceName": "SvcB", "policyName": "Rate Limiting Policy",
+       "details": "no throttling.", "missingPlugins": ["rate-limiting"], "severity": "High"},
+      {"serviceName": "SvcB", "policyName": "Logging Policy",
+       "details": "no audit trail.", "missingPlugins": ["http-log"], "severity": "Medium"}
+    ],
+    "excerpts": "Authentication, rate limiting and logging policies apply.",
+    "expected": {"item_count": 3, "service_names": ["SvcA", "SvcB", "SvcB"]},
+    "ideal": [
+      {"serviceName": "SvcA", "policyName": "Authentication Policy", "issue": "jwt missing.",
+       "missingPlugin": "jwt", "recommendedAction": "Enable jwt.", "severity": "Critical",
+       "owner": "API Gateway Team", "estimatedEffort": "2 hours", "impact": "Takeover risk.",
+       "securityStandardReference": "OWASP API2:2023"},
+      {"serviceName": "SvcB", "policyName": "Rate Limiting Policy", "issue": "no throttling.",
+       "missingPlugin": "rate-limiting", "recommendedAction": "Enable rate-limiting.",
+       "severity": "High", "owner": "API Gateway Team", "estimatedEffort": "1 hour",
+       "impact": "Abuse risk.", "securityStandardReference": "OWASP API4:2023"},
+      {"serviceName": "SvcB", "policyName": "Logging Policy", "issue": "no audit trail.",
+       "missingPlugin": "http-log", "recommendedAction": "Enable http-log.",
+       "severity": "Medium", "owner": "API Gateway Team", "estimatedEffort": "1 hour",
+       "impact": "No forensics.", "securityStandardReference": "NIST AU-2"}
+    ],
+    "flawed": [
+      {"serviceName": "SvcA", "policyName": "Authentication Policy", "issue": "jwt missing.",
+       "missingPlugin": "jwt", "recommendedAction": "Enable jwt.", "severity": "Critical",
+       "owner": "API Gateway Team", "estimatedEffort": "2 hours", "impact": "Takeover risk.",
+       "securityStandardReference": "OWASP API2:2023"},
+      {"serviceName": "SvcB", "issue": "misc."}
+    ]
+  },
+  {
+    "id": "explanation-grounding",
+    "kind": "explanation",
+    "task": "executive_explanation",
+    "brief": "SvcA lacks jwt (Critical). SvcB lacks rate-limiting (High).",
+    "expected": {"required_terms": ["SvcA", "SvcB"], "forbidden_terms": ["flux-capacitor"]},
+    "ideal": "SvcA is exposed to unauthenticated access without jwt (Critical). SvcB risks abuse without rate-limiting (High). Enable both plugins starting with SvcA.",
+    "flawed": "SvcA should enable the flux-capacitor plugin."
+  }
+]

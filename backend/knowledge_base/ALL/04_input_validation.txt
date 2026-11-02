@@ -1,3 +1,9 @@
+Policy-Name: Input Validation Policy
+Policy-Version: 1.0
+Effective-Date: 2025-02-01
+Category: input_validation
+Applies-To: public-apis
+
 Policy Name: Input Validation Policy v1.0
 Description: This policy defines the input validation mechanisms supported by Kong Gateway to ensure that incoming requests conform
 Mandatory Plugins to Comply to this policy: request-validator

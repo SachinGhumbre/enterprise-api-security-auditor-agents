@@ -92,6 +92,29 @@ KONG_ADMIN_API = (get("KONG_ADMIN_API") or "").rstrip("/") or None
 KONG_ADMIN_TOKEN = get("KONG_ADMIN_TOKEN")
 KONG_HTTP_TIMEOUT = get_int("KONG_HTTP_TIMEOUT", 30)
 KONG_PAGE_SIZE = get_int("KONG_PAGE_SIZE", 1000)
+# Live remediation writes are off unless explicitly enabled. Simulation and
+# proposal validation always work; only execute() consults this flag.
+KONG_WRITE_ENABLED = (get("KONG_WRITE_ENABLED", "false") or "").lower() == "true"
+
+
+def _key_list(name):
+    return [k.strip() for k in (get(name) or "").split(",") if k.strip()]
+
+
+# API-key auth (common/auth.py). Empty everywhere = single-user mode.
+ADMIN_API_KEYS = _key_list("ADMIN_API_KEYS")
+OPERATOR_API_KEYS = _key_list("OPERATOR_API_KEYS")
+VIEWER_API_KEYS = _key_list("VIEWER_API_KEYS")
+ALLOWED_ORIGINS = [o.strip() for o in (get("ALLOWED_ORIGINS") or "").split(",")
+                   if o.strip()]
+REDIS_USERNAME = get("REDIS_USERNAME")
+# Resilient discovery: bounded retries for transient failures, capped
+# rate-limit waits, and the Redis snapshot cache with its staleness horizon.
+KONG_MAX_RETRIES = get_int("KONG_MAX_RETRIES", 2)
+KONG_RETRY_BACKOFF_S = get_int("KONG_RETRY_BACKOFF_S", 1)
+KONG_RETRY_MAX_WAIT_S = get_int("KONG_RETRY_MAX_WAIT_S", 5)
+KONG_SNAPSHOT_KEY = get("KONG_SNAPSHOT_KEY", "kong:snapshot:latest")
+KONG_SNAPSHOT_STALE_S = get_int("KONG_SNAPSHOT_STALE_S", 3600)
 KONG_AI_PROXY_HOSTNAME = (get("KONG_AI_PROXY_HOSTNAME") or "").rstrip("/") or None
 KONG_API_KEY = get("KONG_API_KEY")
 
@@ -161,6 +184,18 @@ EMBEDDING_PROVIDER = (get("EMBEDDING_PROVIDER", "auto") or "auto").lower()
 META_ONLY = (get("META_ONLY", "true") or "true").lower() == "true"
 
 LLM_TIMEOUT = get_int("LLM_TIMEOUT", 120)
+
+# --- Model router ------------------------------------------------------------
+# Ordered fallback providers tried after the primary fails on a retryable
+# error (timeout, connection, 5xx, 429). Space/comma separated, e.g. "azure"
+# or "azure,kong"; "none" (default) disables fallback. Auth failures,
+# malformed requests and unknown-model errors never fall back.
+LLM_FALLBACK_ORDER = [p for p in (
+    (get("LLM_FALLBACK_ORDER", "none") or "").lower().replace(",", " ").split()
+) if p in ("azure", "kong")]
+ROUTER_MAX_RETRIES = get_int("ROUTER_MAX_RETRIES", 2)
+CIRCUIT_THRESHOLD = get_int("CIRCUIT_THRESHOLD", 5)
+CIRCUIT_COOLDOWN_S = get_int("CIRCUIT_COOLDOWN_S", 60)
 LLM_MAX_TOKENS = get_int("LLM_MAX_TOKENS", 8000)
 # Findings per remediation LLM call. Keeps each response inside the token cap
 # regardless of how many Kong services were audited.

@@ -19,9 +19,10 @@ import {
   ProgressBar,
   Spinner,
   StatTile,
+  VerificationBadge,
 } from '../components/ui';
 
-const SECURITY_STANDARDS = [
+export const SECURITY_STANDARDS = [
   'GDPR',
   'HIPAA',
   'PCI-DSS',
@@ -112,6 +113,13 @@ export default function AuditView({ notify, auditReport, setAuditReport, onGoToR
           serviceName: service.serviceName,
           servicePlugins: service.service_plugins || [],
           policySources: service.policy_sources || [],
+          serviceEvidence: service.policy_evidence || null,
+          // Chunk-level citations with retrieval scores when the report has
+          // them, otherwise the legacy filename list (old reports).
+          groundedBy: (service.policy_evidence?.chunks?.length
+            ? service.policy_evidence.chunks.map((c) => `${c.source} (${c.score})`)
+            : service.policy_sources) || [],
+          verification: policy.verification || null,
           policyName: policy.policy_name,
           comply: !!policy.comply,
           missingPlugins: policy.missing_plugins || [],
@@ -123,6 +131,8 @@ export default function AuditView({ notify, auditReport, setAuditReport, onGoToR
           serviceName: service.serviceName,
           servicePlugins: service.service_plugins || [],
           policySources: [],
+          groundedBy: [],
+          verification: null,
           policyName: 'Audit error',
           comply: false,
           missingPlugins: [],
@@ -240,7 +250,7 @@ export default function AuditView({ notify, auditReport, setAuditReport, onGoToR
 
         {running ? (
           <p className="mt-4 flex items-center gap-2 text-sm text-brand-700">
-            <Spinner /> Perceive &rarr; Retrieve &rarr; Reason &rarr; Plan &rarr; Act. One LLM call
+            <Spinner /> Perceive &rarr; Retrieve &rarr; Reason &rarr; Verify &rarr; Plan &rarr; Act. One LLM call
             per service, typically 30-60s.
           </p>
         ) : null}
@@ -288,6 +298,7 @@ export default function AuditView({ notify, auditReport, setAuditReport, onGoToR
               <thead>
                 <tr>
                   <th className="th">Status</th>
+                  <th className="th">Verification</th>
                   <th className="th">Service</th>
                   <th className="th">Policy</th>
                   <th className="th">Missing plugins</th>
@@ -299,8 +310,30 @@ export default function AuditView({ notify, auditReport, setAuditReport, onGoToR
                 {rows.map((row, i) => (
                   <tr key={`${row.serviceName}-${row.policyName}-${i}`} className="hover:bg-brand-50">
                     <td className="td"><ComplianceBadge comply={row.comply} /></td>
+                    <td className="td">
+                      {row.verification ? (
+                        <div
+                          className="flex flex-col items-start gap-1"
+                          title={row.verification.confidence_basis || ''}
+                        >
+                          <VerificationBadge status={row.verification.status} />
+                          <span className="text-xs text-ink-muted">
+                            confidence: {row.verification.confidence || '--'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-ink-muted">&mdash;</span>
+                      )}
+                    </td>
                     <td className="td font-semibold text-ink-primary">{row.serviceName}</td>
-                    <td className="td">{row.policyName}</td>
+                    <td className="td">
+                      {row.policyName}
+                      {row.verification?.evidence?.standards_in_scope?.length ? (
+                        <div className="mt-1 text-xs text-ink-muted">
+                          scope: {row.verification.evidence.standards_in_scope.join(', ')}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="td">
                       {row.missingPlugins.length ? (
                         <div className="flex flex-wrap gap-1">
@@ -321,8 +354,8 @@ export default function AuditView({ notify, auditReport, setAuditReport, onGoToR
                     </td>
                     <td className="td">
                       <div className="flex flex-col gap-0.5">
-                        {row.policySources.length ? (
-                          row.policySources.map((s) => (
+                        {row.groundedBy.length ? (
+                          row.groundedBy.map((s) => (
                             <span key={s} className="font-mono text-xs text-ink-muted">{s}</span>
                           ))
                         ) : (

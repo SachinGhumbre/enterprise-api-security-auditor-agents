@@ -1,29 +1,66 @@
 import React, { useState } from 'react';
-import { KeyRound, Loader2, ShieldCheck, User } from 'lucide-react';
+import { KeyRound, Loader2, ShieldCheck } from 'lucide-react';
 
-// Demo-only credential gate. There is no backend auth in this project, so this
-// is presentation scaffolding, not a security boundary.
-const DEMO_USERNAME = 'ai_champion';
-const DEMO_PASSWORD = 'Meta@123';
+import { AGENTS_URL, probeAuth, setApiKey } from '../api/client';
+
+// Demo accounts for the hackathon login page. Usernames are fixed; passwords
+// and the role API keys they map to come from frontend/.env (gitignored).
+// Passwords are displayed on this page; keys never are. The password check is
+// demo UX only — the backend still enforces the role via the mapped API key.
+const DEMO_ACCOUNTS = [
+  { username: 'admin', blurb: 'full access', passwordEnv: 'REACT_APP_ADMIN_PASSWORD', keyEnv: 'REACT_APP_ADMIN_KEY' },
+  { username: 'operator', blurb: 'run & approve', passwordEnv: 'REACT_APP_OPERATOR_PASSWORD', keyEnv: 'REACT_APP_OPERATOR_KEY' },
+  { username: 'viewer', blurb: 'read-only', passwordEnv: 'REACT_APP_VIEWER_PASSWORD', keyEnv: 'REACT_APP_VIEWER_KEY' },
+];
+
+function readEnv(name) {
+  return (typeof process !== 'undefined' && process.env && process.env[name]) || '';
+}
 
 function Login({ onLogin }) {
-  const [username, setUsername] = useState('');
+  // Visible in devtools when the server started before frontend/.env existed.
+  if (!DEMO_ACCOUNTS.some((a) => readEnv(a.passwordEnv)) && typeof console !== 'undefined') {
+    console.warn('Demo passwords missing: restart `npm start` so it picks up frontend/.env.');
+  }
+  const [username, setUsername] = useState('operator');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setTimeout(() => {
-      if (username === DEMO_USERNAME && password === DEMO_PASSWORD) {
-        onLogin(username);
-      } else {
-        setError('Invalid credentials.');
+    try {
+      const account = DEMO_ACCOUNTS.find((a) => a.username === username);
+      const expected = account ? readEnv(account.passwordEnv) : '';
+      if (!account || !expected || password !== expected) {
+        setError('Incorrect password.');
         setLoading(false);
+        return;
       }
-    }, 600);
+      const key = readEnv(account.keyEnv);
+      const status = await probeAuth(AGENTS_URL, key);
+      if (status === 401) {
+        setError(
+          key
+            ? 'Key rejected by the server. Make sure frontend/.env matches backend/.env.'
+            : `No ${username} key configured in frontend/.env, and the server requires auth.`
+        );
+        setLoading(false);
+        return;
+      }
+      if (status < 200 || status >= 300) {
+        setError(`Sign-in probe failed (HTTP ${status}). Is the agents service running?`);
+        setLoading(false);
+        return;
+      }
+      setApiKey(key);
+      onLogin(username);
+    } catch (err) {
+      setError('Cannot reach the agents service. Is it running?');
+      setLoading(false);
+    }
   };
 
   return (
@@ -57,23 +94,20 @@ function Login({ onLogin }) {
 
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium text-ink-secondary">Username</span>
-            <div className="relative">
-              <User
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
-                aria-hidden="true"
-              />
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                placeholder="Enter username"
-                className="field pl-10"
-              />
-            </div>
+            <select
+              className="field"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            >
+              {DEMO_ACCOUNTS.map((a) => (
+                <option key={a.username} value={a.username}>
+                  {a.username} — {a.blurb}
+                </option>
+              ))}
+            </select>
           </label>
 
-          <label className="mt-5 block">
+          <label className="mt-4 block">
             <span className="mb-1.5 block text-sm font-medium text-ink-secondary">Password</span>
             <div className="relative">
               <KeyRound
@@ -84,8 +118,9 @@ function Login({ onLogin }) {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                placeholder="Enter password"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="Demo password (see below)"
                 className="field pl-10"
               />
             </div>
@@ -96,12 +131,28 @@ function Login({ onLogin }) {
             {loading ? 'Signing in...' : 'Sign in'}
           </button>
 
-          <p className="mt-5 rounded-lg bg-brand-50 px-3 py-2 text-center text-xs text-ink-secondary ring-1 ring-inset ring-brand-100">
-            Demo credentials:{' '}
-            <code className="font-mono font-semibold text-brand-800">
-              {DEMO_USERNAME} / {DEMO_PASSWORD}
-            </code>
-          </p>
+          <div className="mt-5 rounded-lg bg-brand-50 px-4 py-3 ring-1 ring-inset ring-brand-100">
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-secondary">
+              Demo credentials
+            </p>
+            <dl className="mt-2 space-y-1.5">
+              {DEMO_ACCOUNTS.map((a) => {
+                const configured = Boolean(readEnv(a.passwordEnv));
+                return (
+                  <div key={a.username} className="flex items-center justify-between gap-3 text-sm">
+                    <dt className="font-mono text-ink-primary">{a.username}</dt>
+                    <dd className="font-mono text-ink-secondary">
+                      {configured ? readEnv(a.passwordEnv) : '(not set)'}
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+            <p className="mt-2.5 text-xs text-ink-secondary">
+              Each account maps to that role&apos;s API key. The key stays in this
+              tab and is cleared on sign-out.
+            </p>
+          </div>
         </form>
       </div>
     </div>

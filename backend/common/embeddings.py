@@ -60,6 +60,13 @@ def embedding_provider():
     return config.resolve_embedding_provider()
 
 
+def embedding_model_id():
+    """Stable id of the model backing embed(): deployment or "local"."""
+    if embedding_provider() == "local":
+        return "local"
+    return config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT or "azure-unknown"
+
+
 def check_config():
     """Return a list of human-readable configuration problems (empty when OK)."""
     if embedding_provider() == "local":

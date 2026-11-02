@@ -13,7 +13,12 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agents import auditor_agent  # noqa: E402
-from common import llm, vector_store  # noqa: E402
+from common import llm, router, vector_store  # noqa: E402
+
+def _routed(parsed, raw=""):
+    return router.ModelResponse(provider="meta", model="muse-spark-1.3",
+                                task="test", text=raw, parsed=parsed)
+
 
 
 KONG_DATA = [
@@ -50,6 +55,8 @@ def isolate_artifacts(tmp_path, monkeypatch):
                         str(tmp_path / "langgraph_audit_report.json"))
     monkeypatch.setattr(auditor_agent, "KONG_DATA_FILE",
                         str(tmp_path / "filtered_kong_data.json"))
+    monkeypatch.setattr(auditor_agent, "AUDIT_SUMMARY_FILE",
+                        str(tmp_path / "langgraph_audit_summary.json"))
     return tmp_path
 
 
@@ -57,7 +64,7 @@ def isolate_artifacts(tmp_path, monkeypatch):
 def stub_rag(monkeypatch):
     monkeypatch.setattr(vector_store, "ping", lambda: True)
     monkeypatch.setattr(vector_store, "index_exists", lambda *a, **k: True)
-    monkeypatch.setattr(vector_store, "search", lambda query, top_k=5: [
+    monkeypatch.setattr(vector_store, "search", lambda query, top_k=5, **k: [
         {
             "id": "embedding:test-1",
             "content": "Authentication Policy: services must enable key-auth, jwt or oauth2.",
@@ -100,8 +107,8 @@ def test_retrieve_policies_warns_when_store_empty(monkeypatch):
 
 
 def test_reason_audit_parses_model_json(monkeypatch, stub_rag):
-    monkeypatch.setattr(llm, "chat_json",
-                        lambda *a, **k: (AUDIT_JSON, json.dumps(AUDIT_JSON)))
+    monkeypatch.setattr(router, "run",
+                        lambda *a, **k: _routed(AUDIT_JSON, json.dumps(AUDIT_JSON)))
 
     state = auditor_agent.retrieve_policies({"kong_data": KONG_DATA})
     state = auditor_agent.reason_audit(state)
@@ -114,7 +121,7 @@ def test_reason_audit_parses_model_json(monkeypatch, stub_rag):
 
 def test_reason_audit_records_unparsable_response(monkeypatch, stub_rag):
     """A non-JSON reply must be reported, not raise UnboundLocalError."""
-    monkeypatch.setattr(llm, "chat_json", lambda *a, **k: (None, "I cannot help with that."))
+    monkeypatch.setattr(router, "run", lambda *a, **k: _routed(None, "I cannot help with that."))
 
     state = auditor_agent.retrieve_policies({"kong_data": KONG_DATA})
     state = auditor_agent.reason_audit(state)
@@ -128,7 +135,7 @@ def test_reason_audit_records_call_failure(monkeypatch, stub_rag):
     def boom(*args, **kwargs):
         raise RuntimeError("gateway timeout")
 
-    monkeypatch.setattr(llm, "chat_json", boom)
+    monkeypatch.setattr(router, "run", boom)
 
     state = auditor_agent.retrieve_policies({"kong_data": KONG_DATA})
     state = auditor_agent.reason_audit(state)
@@ -160,8 +167,8 @@ def test_action_audit_writes_report(isolate_artifacts):
 
 def test_audit_graph_runs_end_to_end(monkeypatch, stub_rag, isolate_artifacts):
     """The compiled graph must terminate - it needs an explicit END edge."""
-    monkeypatch.setattr(llm, "chat_json",
-                        lambda *a, **k: (AUDIT_JSON, json.dumps(AUDIT_JSON)))
+    monkeypatch.setattr(router, "run",
+                        lambda *a, **k: _routed(AUDIT_JSON, json.dumps(AUDIT_JSON)))
 
     result = auditor_agent.audit_app.invoke({
         "kong_data": KONG_DATA,

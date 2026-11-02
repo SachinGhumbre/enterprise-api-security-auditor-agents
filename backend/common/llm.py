@@ -230,6 +230,152 @@ def chat(messages, route=None, max_tokens=None, temperature=None):
     return response.choices[0].message.content
 
 
+def _usage_of(response):
+    """Token usage from an OpenAI-compatible response, or None when absent."""
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return None
+    out = {}
+    for key in ("prompt_tokens", "completion_tokens", "total_tokens"):
+        value = getattr(usage, key, None)
+        if value is not None:
+            out[key] = value
+    return out or None
+
+
+def complete_meta(model, messages, max_tokens=None, temperature=None):
+    """Meta Model API completion with an explicit model id.
+
+    Returns (content, usage|None). Never falls back to any default model:
+    an empty id raises instead of guessing.
+    """
+    if not model:
+        raise RuntimeError(
+            "Meta model id is not configured (META_MODEL is empty). Refusing "
+            "to rely on an API default; set META_MODEL in backend/.env.")
+    kwargs = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": max_tokens or config.LLM_MAX_TOKENS,
+    }
+    if temperature is not None:
+        kwargs["temperature"] = temperature
+
+    try:
+        response = _get_meta_client().chat.completions.create(**kwargs)
+    except Exception as exc:
+        message = str(exc)
+        # Some deployments expect max_completion_tokens instead.
+        if "max_tokens" in message and "max_completion_tokens" in message:
+            kwargs["max_completion_tokens"] = kwargs.pop("max_tokens")
+            response = _get_meta_client().chat.completions.create(**kwargs)
+        elif "temperature" in message and temperature is not None:
+            kwargs.pop("temperature")
+            response = _get_meta_client().chat.completions.create(**kwargs)
+        elif "model_not_found" in message or "model was not found" in message.lower():
+            raise RuntimeError(
+                f"Meta Model API rejected the model id '{model}' "
+                f"(model_not_found). The key is valid and the request reached Meta; "
+                f"only the model id is wrong. List the ids your key can actually use:\n"
+                f"  curl -H 'Authorization: Bearer $META_API_KEY' {config.META_BASE_URL}/models\n"
+                f"or GET /api/v1/ai-agents/models on this service, then set META_MODEL "
+                f"in backend/.env to one of them."
+            ) from exc
+        else:
+            raise RuntimeError(f"Meta Model API call failed: {message}") from exc
+
+    return response.choices[0].message.content, _usage_of(response)
+
+
+def complete_azure(deployment, messages, max_tokens=None, temperature=None):
+    """Azure OpenAI completion against an explicit deployment.
+
+    Returns (content, usage|None). No META_ONLY check here: fallback policy
+    is enforced by the router; this is raw transport.
+    """
+    if not deployment:
+        raise RuntimeError(
+            "Azure deployment name is not configured "
+            "(AZURE_OPENAI_DEPLOYMENT_NAME is empty).")
+    kwargs = {
+        "model": deployment,
+        "messages": messages,
+        "max_completion_tokens": max_tokens or config.LLM_MAX_TOKENS,
+    }
+    if temperature is not None:
+        kwargs["temperature"] = temperature
+
+    try:
+        response = _get_azure_client().chat.completions.create(**kwargs)
+    except Exception as exc:
+        message = str(exc)
+        if "max_completion_tokens" in message and "max_tokens" in message:
+            kwargs.pop("max_completion_tokens")
+            kwargs["max_tokens"] = max_tokens or config.LLM_MAX_TOKENS
+            response = _get_azure_client().chat.completions.create(**kwargs)
+        elif "temperature" in message and temperature is not None:
+            kwargs.pop("temperature")
+            response = _get_azure_client().chat.completions.create(**kwargs)
+        else:
+            raise
+
+    return response.choices[0].message.content, _usage_of(response)
+
+
+def complete_kong(messages, route=None, max_tokens=None):
+    """Kong AI Gateway completion. Returns (content, usage|None)."""
+    url = f"{config.KONG_AI_PROXY_HOSTNAME}{route or ''}"
+    response = requests.post(
+        url,
+        headers={"Content-Type": "application/json", "x-api-key": config.KONG_API_KEY},
+        json={"messages": messages},
+        timeout=config.LLM_TIMEOUT,
+    )
+    response.raise_for_status()
+    try:
+        payload = response.json()
+    except ValueError:
+        return response.text, None
+    usage = payload.get("usage") if isinstance(payload, dict) else None
+    return _unwrap_openai_envelope(payload), (usage if isinstance(usage, dict) else None)
+
+
+def _iter_deltas(stream):
+    for chunk in stream:
+        try:
+            delta = chunk.choices[0].delta.content
+        except (AttributeError, IndexError, TypeError):
+            continue
+        if delta:
+            yield delta
+
+
+def stream_meta(model, messages, max_tokens=None):
+    """Yield text deltas from a streaming Meta completion (OpenAI-compatible)."""
+    if not model:
+        raise RuntimeError("Meta model id is not configured (META_MODEL is empty).")
+    stream = _get_meta_client().chat.completions.create(
+        model=model,
+        messages=messages,
+        max_tokens=max_tokens or config.LLM_MAX_TOKENS,
+        stream=True,
+    )
+    return _iter_deltas(stream)
+
+
+def stream_azure(deployment, messages, max_tokens=None):
+    """Yield text deltas from a streaming Azure completion."""
+    if not deployment:
+        raise RuntimeError("Azure deployment name is not configured.")
+    stream = _get_azure_client().chat.completions.create(
+        model=deployment,
+        messages=messages,
+        max_completion_tokens=max_tokens or config.LLM_MAX_TOKENS,
+        stream=True,
+    )
+    return _iter_deltas(stream)
+
+
 def list_models():
     """Model ids the configured Meta key can actually use.
 

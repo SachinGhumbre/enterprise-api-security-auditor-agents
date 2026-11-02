@@ -36,6 +36,35 @@ export function SeverityBadge({ severity }) {
   );
 }
 
+const VERIFICATION_CHIP = {
+  verified: 'chip-good',
+  unverified: 'chip-warning',
+  contradictory: 'chip-critical',
+};
+
+const VERIFICATION_ICON = {
+  verified: CheckCircle2,
+  unverified: AlertTriangle,
+  contradictory: XCircle,
+};
+
+const VERIFICATION_LABEL = {
+  verified: 'Verified',
+  unverified: 'Unverified',
+  contradictory: 'Contradictory',
+};
+
+export function VerificationBadge({ status }) {
+  const key = String(status || '').toLowerCase();
+  const Icon = VERIFICATION_ICON[key] || Info;
+  return (
+    <span className={VERIFICATION_CHIP[key] || 'chip-info'}>
+      <Icon className="h-3 w-3" aria-hidden="true" />
+      {VERIFICATION_LABEL[key] || 'Unknown'}
+    </span>
+  );
+}
+
 export function ComplianceBadge({ comply }) {
   return comply ? (
     <span className="chip-good">
@@ -161,6 +190,103 @@ export function Collapsible({ summary, children, defaultOpen = false }) {
         />
       </button>
       {open ? <div className="border-t border-ink-hairline px-4 py-3">{children}</div> : null}
+    </div>
+  );
+}
+
+export function MultiSelect({
+  options = [],
+  selected = [],
+  onChange,
+  placeholder = 'Select…',
+  disabled = false,
+  emptyHint = 'No options available.',
+  ariaLabel,
+}) {
+  const [open, setOpen] = React.useState(false);
+  const rootRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!open) return undefined;
+    const onDown = (e) => {
+      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open ]);
+
+  const toggle = (opt) =>
+    onChange(
+      selected.includes(opt) ? selected.filter((s) => s !== opt) : [...selected, opt]
+    );
+  const all = options.length > 0 && selected.length === options.length;
+  const label =
+    selected.length === 0
+      ? placeholder
+      : selected.length === 1
+        ? selected[0]
+        : `${selected.length} selected`;
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-label={ariaLabel}
+        className="field flex w-full items-center justify-between gap-2 text-left disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <span className={`truncate ${selected.length ? '' : 'text-ink-muted'}`}>{label}</span>
+        <ChevronDown
+          className={`h-4 w-4 shrink-0 text-ink-muted transition-transform ${open ? 'rotate-180' : ''}`}
+          aria-hidden="true"
+        />
+      </button>
+      {open && !disabled ? (
+        <div className="absolute z-50 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-ink-hairline bg-surface-raised p-1 shadow-raised">
+          {options.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-ink-muted">{emptyHint}</p>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => onChange(all ? [] : [...options])}
+                className="w-full rounded-md px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-brand-700 hover:bg-brand-50"
+              >
+                {all ? 'Clear all' : 'Select all'}
+              </button>
+              {options.map((opt) => {
+                const active = selected.includes(opt);
+                return (
+                  <label
+                    key={opt}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-md px-3 py-2 text-sm text-ink-secondary hover:bg-brand-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={active}
+                      onChange={() => toggle(opt)}
+                      className="h-4 w-4 shrink-0 accent-brand-600"
+                    />
+                    <span className="truncate">{opt}</span>
+                    {active ? (
+                      <CheckCircle2 className="ml-auto h-4 w-4 shrink-0 text-brand-600" aria-hidden="true" />
+                    ) : null}
+                  </label>
+                );
+              })}
+            </>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

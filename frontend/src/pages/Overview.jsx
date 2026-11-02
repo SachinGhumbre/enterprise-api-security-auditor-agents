@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Boxes, Cpu, Database, RotateCcw, Server, ShieldCheck } from 'lucide-react';
+import { Boxes, Cpu, Database, Radar, RotateCcw, Server, ShieldCheck } from 'lucide-react';
 
-import { AGENTS_URL, KNOWLEDGE_URL, REDIS_TEST_URL, health } from '../api/client';
+import { AGENTS_URL, KNOWLEDGE_URL, REDIS_TEST_URL, assess, health, rememberAssessment } from '../api/client';
 import { Banner, Card, Spinner, StatusDot } from '../components/ui';
 
 const PIPELINE = [
@@ -9,18 +9,27 @@ const PIPELINE = [
   { step: '2', name: 'Retrieve', detail: 'Vector-search the policy corpus in Redis (RAG)' },
   { step: '3', name: 'Reason', detail: 'LLM judges compliance against retrieved policy excerpts' },
   { step: '4', name: 'Plan', detail: 'Score, summarise and prioritise the findings' },
-  { step: '5', name: 'Act', detail: 'Persist the audit report / remediation plan' },
+  { step: '5', name: 'Verify', detail: 'Deterministically check verdicts against Kong inventory' },
+  { step: '6', name: 'Act', detail: 'Persist the audit report / remediation plan' },
 ];
+
+const RUN_CHIP = {
+  complete: 'chip-good',
+  failed: 'chip-critical',
+  awaiting_approval: 'chip-warning',
+  running: 'chip-info',
+};
 
 export default function Overview({ onNavigate }) {
   const [state, setState] = useState({ loading: true });
 
   const probe = useCallback(async () => {
     setState({ loading: true });
-    const [agentsRes, knowledgeRes, redisRes] = await Promise.allSettled([
+    const [agentsRes, knowledgeRes, redisRes, runsRes] = await Promise.allSettled([
       health.agents(),
       health.knowledge(),
       health.redisTest(),
+      assess.list(),
     ]);
     setState({
       loading: false,
@@ -28,6 +37,7 @@ export default function Overview({ onNavigate }) {
       knowledge:
         knowledgeRes.status === 'fulfilled' ? knowledgeRes.value : { _error: knowledgeRes.reason?.message },
       redis: redisRes.status === 'fulfilled' ? redisRes.value : { _error: redisRes.reason?.message },
+      runs: runsRes.status === 'fulfilled' ? runsRes.value.assessments || [] : null,
     });
   }, []);
 
@@ -35,7 +45,12 @@ export default function Overview({ onNavigate }) {
     probe();
   }, [probe]);
 
-  const { loading, agents: ag, knowledge: kb, redis: rd } = state;
+  const { loading, agents: ag, knowledge: kb, redis: rd, runs } = state;
+
+  const openRun = (id) => {
+    rememberAssessment(id);
+    onNavigate('investigation');
+  };
 
   const services = [
     {
@@ -197,6 +212,33 @@ export default function Overview({ onNavigate }) {
         })}
       </div>
 
+      {!loading && runs ? (
+        <Card
+          title="Recent investigations"
+          subtitle="Newest first. Open any run to follow or review its agents."
+        >
+          {runs.length === 0 ? (
+            <p className="text-sm text-ink-muted">No assessments yet this session.</p>
+          ) : (
+            <ul className="divide-y divide-ink-hairline">
+              {runs.slice(0, 8).map((run) => (
+                <li key={run.assessment_id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                  <button
+                    type="button"
+                    className="font-mono text-xs text-brand-700 hover:underline"
+                    onClick={() => openRun(run.assessment_id)}
+                  >
+                    {run.assessment_id}
+                  </button>
+                  <span className={RUN_CHIP[run.status] || 'chip-info'}>{run.status}</span>
+                  <span className="text-xs text-ink-muted">{run.started_at || ''}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      ) : null}
+
       {!loading && ag && !ag._error && (ag.warnings || []).length ? (
         <div className="space-y-3">
           {ag.warnings.map((w) => (
@@ -223,7 +265,7 @@ export default function Overview({ onNavigate }) {
         title="Agent pipeline"
         subtitle="Both the Audit and Remediate agents run this LangGraph loop."
       >
-        <ol className="grid gap-3 md:grid-cols-5">
+        <ol className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
           {PIPELINE.map((p) => (
             <li key={p.step} className="rounded-lg border border-ink-hairline bg-surface-sunken p-4">
               <span className="chip bg-brand-600 text-white">{p.step}</span>
@@ -236,14 +278,17 @@ export default function Overview({ onNavigate }) {
 
       <Card title="Quick start">
         <div className="flex flex-wrap gap-3">
-          <button className="btn-accent" onClick={() => onNavigate('knowledge')}>
-            <Boxes className="h-4 w-4" /> 1. Ingest policies
+          <button className="btn-primary" onClick={() => onNavigate('investigation')}>
+            <Radar className="h-4 w-4" /> Run agentic investigation
           </button>
-          <button className="btn-primary" onClick={() => onNavigate('audit')}>
-            <ShieldCheck className="h-4 w-4" /> 2. Run audit
+          <button className="btn-ghost" onClick={() => onNavigate('knowledge')}>
+            <Boxes className="h-4 w-4" /> Ingest policies
+          </button>
+          <button className="btn-ghost" onClick={() => onNavigate('audit')}>
+            <ShieldCheck className="h-4 w-4" /> Single-agent audit
           </button>
           <button className="btn-ghost" onClick={() => onNavigate('remediation')}>
-            <Server className="h-4 w-4" /> 3. Generate remediation
+            <Server className="h-4 w-4" /> Generate remediation
           </button>
         </div>
       </Card>

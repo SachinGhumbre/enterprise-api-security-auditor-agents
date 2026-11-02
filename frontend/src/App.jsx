@@ -1,12 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { setApiKey, setOnUnauthorized } from './api/client';
 import Footer from './components/Footer';
 import Header from './components/Header';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import AuditView from './pages/AuditView';
+import Findings from './pages/Findings';
+import Investigation from './pages/Investigation';
 import KnowledgeBase from './pages/KnowledgeBase';
+import ModelAnalytics from './pages/ModelAnalytics';
 import Overview from './pages/Overview';
+import RemediationCentre from './pages/RemediationCentre';
 import RemediationView from './pages/RemediationView';
 import Toast from './pages/Toast';
 import './App.css';
@@ -31,13 +36,23 @@ function App() {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     setUser(null);
+    setApiKey('');
     setActivePage('overview');
     setAuditReport(null);
     setRemediationPlan(null);
     setToast(null);
-  };
+  }, []);
+
+  // A rejected key mid-session signs the user out instead of failing pages.
+  useEffect(() => {
+    setOnUnauthorized(() => {
+      handleLogout();
+      setToast({ message: 'Session expired or key rejected (401). Signed out.', type: 'error' });
+    });
+    return () => setOnUnauthorized(null);
+  }, [handleLogout]);
 
   if (!user) {
     return <Login onLogin={setUser} />;
@@ -45,6 +60,10 @@ function App() {
 
   const pages = {
     overview: <Overview onNavigate={setActivePage} />,
+    investigation: <Investigation notify={notify} />,
+    findings: <Findings notify={notify} />,
+    centre: <RemediationCentre notify={notify} />,
+    models: <ModelAnalytics notify={notify} />,
     knowledge: <KnowledgeBase notify={notify} />,
     audit: (
       <AuditView

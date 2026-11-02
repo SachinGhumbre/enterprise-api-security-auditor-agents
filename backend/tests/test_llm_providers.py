@@ -178,6 +178,7 @@ def test_audit_agent_runs_on_meta_provider(meta_mode, monkeypatch, tmp_path):
     from common import vector_store
 
     monkeypatch.setattr(auditor_agent, "AUDIT_REPORT_FILE", str(tmp_path / "audit.json"))
+    monkeypatch.setattr(auditor_agent, "AUDIT_SUMMARY_FILE", str(tmp_path / "summary.json"))
     monkeypatch.setattr(vector_store, "ping", lambda: False)  # skip RAG for this test
 
     audit_json = (

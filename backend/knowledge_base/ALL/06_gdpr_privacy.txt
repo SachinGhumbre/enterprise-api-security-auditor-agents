@@ -1,3 +1,9 @@
+Policy-Name: Data Privacy & GDPR Policy
+Policy-Version: 2.0
+Effective-Date: 2025-09-01
+Category: privacy
+Applies-To: pii-apis
+
 Policy Name: Data Privacy & GDPR Policy v1.0
 Description: APIs handling PII must ensure lawful processing and data minimization.
 Mandatory Plugins to Comply to this policy: request-transformer-advanced, response-transformer-advanced

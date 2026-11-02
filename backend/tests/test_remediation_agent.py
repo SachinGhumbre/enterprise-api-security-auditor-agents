@@ -12,7 +12,12 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agents import auditor_agent  # noqa: E402
-from common import llm, vector_store  # noqa: E402
+from common import llm, router, vector_store  # noqa: E402
+
+def _routed(parsed, raw=""):
+    return router.ModelResponse(provider="meta", model="muse-spark-1.3",
+                                task="test", text=raw, parsed=parsed)
+
 
 
 AUDIT_REPORT = {
@@ -62,7 +67,7 @@ def isolate_artifacts(tmp_path, monkeypatch):
 def stub_rag(monkeypatch):
     monkeypatch.setattr(vector_store, "ping", lambda: True)
     monkeypatch.setattr(vector_store, "index_exists", lambda *a, **k: True)
-    monkeypatch.setattr(vector_store, "search", lambda query, top_k=5: [
+    monkeypatch.setattr(vector_store, "search", lambda query, top_k=5, **k: [
         {
             "id": "embedding:test-1",
             "content": "Authentication Policy: enable key-auth, jwt or oauth2.",
@@ -95,7 +100,7 @@ def test_retrieve_remediation_context(stub_rag):
 
 
 def test_reason_remediation_returns_plan(monkeypatch, stub_rag):
-    monkeypatch.setattr(llm, "chat_json", lambda *a, **k: (PLAN, json.dumps(PLAN)))
+    monkeypatch.setattr(router, "run", lambda *a, **k: _routed(PLAN, json.dumps(PLAN)))
 
     state = auditor_agent.perceive_issues({"audit_report": AUDIT_REPORT})
     state = auditor_agent.retrieve_remediation_context(state)
@@ -106,8 +111,8 @@ def test_reason_remediation_returns_plan(monkeypatch, stub_rag):
 
 def test_reason_remediation_unwraps_object_response(monkeypatch, stub_rag):
     """Models sometimes wrap the array in {"remediation_plan": [...]}."""
-    monkeypatch.setattr(llm, "chat_json",
-                        lambda *a, **k: ({"remediation_plan": PLAN}, json.dumps(PLAN)))
+    monkeypatch.setattr(router, "run",
+                        lambda *a, **k: _routed({"remediation_plan": PLAN}, json.dumps(PLAN)))
 
     state = auditor_agent.perceive_issues({"audit_report": AUDIT_REPORT})
     state = auditor_agent.retrieve_remediation_context(state)
@@ -120,7 +125,7 @@ def test_reason_remediation_skips_llm_when_compliant(monkeypatch):
     def boom(*args, **kwargs):
         raise AssertionError("LLM must not be called when there are no findings")
 
-    monkeypatch.setattr(llm, "chat_json", boom)
+    monkeypatch.setattr(router, "run", boom)
 
     state = auditor_agent.reason_remediation({"findings": []})
     assert state["remediation_plan"] == []
@@ -131,7 +136,7 @@ def test_reason_remediation_records_failure(monkeypatch, stub_rag):
     def boom(*args, **kwargs):
         raise RuntimeError("gateway timeout")
 
-    monkeypatch.setattr(llm, "chat_json", boom)
+    monkeypatch.setattr(router, "run", boom)
 
     state = auditor_agent.perceive_issues({"audit_report": AUDIT_REPORT})
     state = auditor_agent.reason_remediation(state)
@@ -161,13 +166,13 @@ def test_reason_remediation_batches_large_finding_sets(monkeypatch, stub_rag):
     """
     calls = []
 
-    def fake_chat_json(messages, **kwargs):
+    def fake_chat_json(task, messages, **kwargs):
         body = messages[-1]["content"]
         sent = json.loads(body.split("Audit findings:\n", 1)[1].split("\n\nOrganization", 1)[0])
         calls.append(len(sent))
-        return [dict(PLAN[0], serviceName=f["serviceName"]) for f in sent], "[]"
+        return _routed([dict(PLAN[0], serviceName=f["serviceName"]) for f in sent], "[]")
 
-    monkeypatch.setattr(llm, "chat_json", fake_chat_json)
+    monkeypatch.setattr(router, "run", fake_chat_json)
 
     state = auditor_agent.reason_remediation({
         "findings": _many_findings(16),
@@ -183,14 +188,14 @@ def test_reason_remediation_batches_large_finding_sets(monkeypatch, stub_rag):
 
 def test_reason_remediation_retries_failed_batch_individually(monkeypatch, stub_rag):
     """One unparsable batch must not discard its findings."""
-    def fake_chat_json(messages, **kwargs):
+    def fake_chat_json(task, messages, **kwargs):
         body = messages[-1]["content"]
         sent = json.loads(body.split("Audit findings:\n", 1)[1].split("\n\nOrganization", 1)[0])
         if len(sent) > 1:
-            return None, "Sorry, I cannot do that."  # whole-batch failure
-        return [dict(PLAN[0], serviceName=sent[0]["serviceName"])], "[]"
+            return _routed(None, "Sorry, I cannot do that.")  # whole-batch failure
+        return _routed([dict(PLAN[0], serviceName=sent[0]["serviceName"])], "[]")
 
-    monkeypatch.setattr(llm, "chat_json", fake_chat_json)
+    monkeypatch.setattr(router, "run", fake_chat_json)
 
     state = auditor_agent.reason_remediation({
         "findings": _many_findings(3),
@@ -203,7 +208,7 @@ def test_reason_remediation_retries_failed_batch_individually(monkeypatch, stub_
 
 
 def test_reason_remediation_reports_incomplete_coverage(monkeypatch, stub_rag):
-    monkeypatch.setattr(llm, "chat_json", lambda *a, **k: ([], "[]"))
+    monkeypatch.setattr(router, "run", lambda *a, **k: _routed([], "[]"))
 
     state = auditor_agent.reason_remediation({
         "findings": _many_findings(4),
@@ -238,7 +243,7 @@ def test_action_remediation_writes_plan():
 
 def test_remediation_graph_runs_end_to_end(monkeypatch, stub_rag):
     """The compiled graph must terminate - it needs an explicit END edge."""
-    monkeypatch.setattr(llm, "chat_json", lambda *a, **k: (PLAN, json.dumps(PLAN)))
+    monkeypatch.setattr(router, "run", lambda *a, **k: _routed(PLAN, json.dumps(PLAN)))
 
     result = auditor_agent.rem_app.invoke({"audit_report": AUDIT_REPORT})
 

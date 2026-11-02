@@ -1,3 +1,9 @@
+Policy-Name: Authentication Policy
+Policy-Version: 1.0
+Effective-Date: 2025-01-15
+Category: authentication
+Applies-To: all
+
 Policy Name: Authentication Policy v1.0
 Description: This policy outlines the authentication mechanisms supported by Kong Gateway to ensure secure access to APIs and services. It includes mandatory and optional plugins that can be configured to enforce authentication.
 Mandatory Plugins to Comply to this policy: jwt, oauth2, key-auth

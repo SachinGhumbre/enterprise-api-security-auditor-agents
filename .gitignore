@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local secrets - never commit live credentials
+*.env
+backend/.env
+

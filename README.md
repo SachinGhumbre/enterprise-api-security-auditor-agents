@@ -1,7 +1,7 @@
 # Enterprise API Security Auditor
 
-Ingest your security policies once. Audit your entire API estate anytime, automatically,
-against GDPR, HIPAA, PCI-DSS, ISO 27001, OWASP API Top 10, PSD2/SCA, NIST and SOC 2 —
+Enterprise API Security Auditor is an autonomous security auditor agentic AI application that helps to audit your API and AI gateways. Ingest your security policies once. Audit your entire API estate anytime, automatically,
+against GDPR, HIPAA, PCI-DSS, ISO 27001, OWASP API Top 10, PSD2/SCA, NIST and SOC 2, etc.
 **without anyone on the team needing to know those standards**.
 
 ---
@@ -23,8 +23,9 @@ against GDPR, HIPAA, PCI-DSS, ISO 27001, OWASP API Top 10, PSD2/SCA, NIST and SO
 13. [Frontend](#frontend)
 14. [Tests](#tests)
 15. [Troubleshooting](#troubleshooting)
-16. [Technology stack](#technology-stack)
-17. [Author](#author)
+16. [Documentation](#documentation)
+17. [Technology stack](#technology-stack)
+18. [Author](#author)
 
 ---
 
@@ -57,23 +58,26 @@ compliance depends on whether one expert happened to be in the room.
 
 **Enterprise API Security Auditor — an agentic AI application.**
 
-Two autonomous agents replace the manual loop end to end:
+A supervisor-led team of nine LangGraph agents replaces the manual loop end
+to end (the original two single-agent paths are kept and still work):
 
 ```
-Ingest policies ONCE  →  Audit ANYTIME  →  Get a prioritised fix plan
+Ingest policies ONCE  →  Investigate ANYTIME  →  Approve  →  Remediate safely
 ```
 
 ### How it works
 
-1. **Ingest once.** Drop your policy documents into `backend/knowledge_base/`. They are
-   chunked, embedded and stored in a Redis vector database. Update them whenever policy
-   changes — no code changes, no retraining.
-2. **Audit anytime.** The Audit Agent reads your live API Gateway configuration, retrieves the
-   policy excerpts relevant to each service (RAG), and uses **Meta's Muse Spark** to
-   decide compliance *per policy* — naming exactly which plugins are missing.
-3. **Remediate automatically.** The Remediation Agent converts findings into prioritised,
-   severity-ranked actions, each citing a real control (OWASP API2:2023, GDPR Art. 32,
-   NIST SP 800-53 IA-2…).
+1. **Ingest once.** Drop versioned policy documents into `backend/knowledge_base/`.
+   They are chunked, embedded and stored in Redis; re-ingest re-indexes only what
+   changed — no code changes, no retraining.
+2. **Investigate anytime.** A supervisor plans the run, discovery pulls Kong
+   inventory, and security / compliance / threat agents investigate in parallel.
+   **Meta's Muse Spark 1.3** reasons over retrieved policy excerpts; deterministic
+   code verifies every claim, scores one deduplicated risk register, and pauses
+   for human approval.
+3. **Remediate safely.** Structured change proposals carry diffs, simulations and
+   residual risk. Approved changes execute through an allowlisted adapter with
+   post-change validation; everything lands in a hash-chained audit log.
 
 ### What it replaces
 
@@ -119,7 +123,7 @@ This project runs on the **[Meta Model API](https://developer.meta.com/ai/resour
 
 | Model | Where it is used |
 |---|---|
-| **`muse-spark-1.3`** | The reasoning engine for **both** agents — compliance judgement in the Audit Agent and plan generation in the Remediation Agent |
+| **`muse-spark-1.3`** | The reasoning engine for **all six reasoning tasks** — investigation, evidence correlation, threat modelling, risk explanation, remediation planning and executive summaries — via one enforced routing table (`GET /llm/policy`). See [Why Muse Spark](docs/why-muse-spark.md) |
 | **Muse Code** | Used as the coding agent while developing this project |
 | **Muse Spark Open** | Same lineage; the pipeline can target a self-hosted instance via `META_BASE_URL` |
 
@@ -162,9 +166,10 @@ response = client.chat.completions.create(
 )
 ```
 
-All LLM access funnels through `backend/common/llm.py`, so the provider is a single
-configuration switch (`meta` | `kong`) rather than something scattered across
-the agents.
+All LLM access funnels through a central router (`backend/common/router.py`) over
+transports in `backend/common/llm.py`, so the provider is a single configuration
+switch (`meta` | `kong` | `azure`) rather than something scattered across the
+agents. No agent picks its own model, and an empty model id refuses to call.
 
 ### Setup — one value to change
 
@@ -329,7 +334,7 @@ title: Runtime topology — services, ports, and dependencies
 ---
 flowchart TB
     subgraph UI["React Dashboard :3000"]
-        D[Overview / Knowledge / Audit / Remediation]
+        D["Overview / Investigation / Findings /<br/>Remediation Centre / Model Analytics /<br/>Knowledge / Audit / Remediation"]
     end
 
     subgraph SVC["Backend services"]
@@ -344,7 +349,7 @@ flowchart TB
         META["Meta Model API<br/>muse-spark-1.3"]
     end
 
-    D -->|audit, remediate| A
+    D -->|assess, approve, audit, remediate| A
     D -->|ingest, search| K
     D -->|health| R
     K -->|embed + store| RS
@@ -368,27 +373,42 @@ flowchart TB
 
 ```mermaid
 ---
-title: Agent pipeline — Perceive to Act
+title: Supervisor-led investigation — plan, delegate, correlate, approve
 ---
 flowchart LR
-    P[Perceive<br/>Kong config] --> RE[Retrieve<br/>policy chunks via KNN]
-    RE --> RA["Reason<br/>Muse Spark verdict"]
-    RA --> PL[Plan<br/>score & summarise]
-    PL --> AC[Act<br/>persist artifact]
-    AC --> E([END])
+    S[Supervisor<br/>plan + budgets] --> DS[Discovery<br/>Kong snapshot]
+    DS --> S
+    S -->|"delegate<br/>in parallel"| SEC[Security]
+    S -->|"delegate<br/>in parallel"| CMP[Compliance]
+    S -->|"delegate<br/>in parallel"| THR[Threat model]
+    SEC & CMP & THR --> RI[Risk register<br/>dedup + score]
+    RI --> RP["Remediation<br/>proposal + simulation"]
+    RP -->|"human approval"| X["Allowlisted<br/>write adapter"]
+    X --> V["Post-change<br/>validation"]
+    V --> E([Report +<br/>audit evidence])
 
     classDef step fill:#E9F3F2,stroke:#0E7C7B,stroke-width:1.5px,color:#111;
+    classDef gate fill:#F4F1E8,stroke:#8A6D1B,stroke-width:1.5px,color:#111;
     classDef done fill:#1F3A5F,stroke:#1F3A5F,stroke-width:1.5px,color:#fff;
-    class P,RE,RA,PL,AC step;
+    class S,DS,SEC,CMP,THR,RI,RP,V step;
+    class X gate;
     class E done;
 ```
 
-Both agents follow this **Perceive → Retrieve → Reason → Plan → Act** loop.
+The nine logical agents run this **plan → investigate → evaluate → decide** loop
+under supervisor control (`backend/agents/orchestrator.py`): independent
+investigations run in parallel, evidence fans in to one scored risk register,
+and the workflow pauses for human approval before anything is executed. See
+[multi-agent architecture](docs/multi-agent-architecture.md) for the full
+diagram, budgets and resume semantics.
 
-The **Retrieve** stage is what makes this RAG rather than a bare prompt: each service's
-plugin set becomes a query, the top-k matching policy excerpts are pulled from Redis, and
-only those excerpts are given to the model. Every verdict reports a `policy_sources`
-array naming the files that grounded it.
+The **Retrieve** stage is what makes this RAG rather than a bare prompt: each
+finding becomes a query, the matching policy excerpts are pulled from Redis, and
+only those excerpts are given to the model. Every verdict reports the chunk IDs
+and files that grounded it.
+
+(The original `/audit` + `/remediate` single-agent path is kept and bypasses
+the orchestrator — same inputs, same shapes, for existing clients.)
 
 ---
 
@@ -405,24 +425,40 @@ enterprise-api-security-auditor-agents/
 │   ├── docker-compose.yaml              # Redis Stack
 │   ├── common/                          # shared layer
 │   │   ├── config.py                    #   env loading + effective config
-│   │   ├── embeddings.py                #   local embedding providers
-│   │   ├── llm.py                       #   Meta | Kong AI Gateway
-│   │   └── vector_store.py              #   Redis index, upsert, KNN search
+│   │   ├── auth.py                      #   API-key auth, viewer/operator/admin
+│   │   ├── validation.py                #   payload validation, prompt sanitising
+│   │   ├── audit_log.py                 #   hash-chained audit log
+│   │   ├── embeddings.py                #   Azure / local embedding providers
+│   │   ├── llm.py                       #   Meta | Kong AI Gateway | Azure
+│   │   ├── router.py                    #   central model router + call log
+│   │   ├── rules.py                     #   deterministic verdict verification
+│   │   ├── policy.py                    #   versioned control catalog
+│   │   ├── threats.py                   #   threat-scenario engine
+│   │   ├── risks.py                     #   risk register + versioned scoring
+│   │   ├── changes.py                   #   change proposals + simulator input
+│   │   ├── kong_adapter.py              #   allowlisted Kong write adapter
+│   │   ├── kong_inventory.py            #   resilient discovery + snapshots
+│   │   └── vector_store.py              #   Redis index, upsert, curated KNN
 │   ├── scripts/verify_meta.py           #   one-command Meta Model API check
+│   ├── eval/                            #   model + retrieval eval suites
 │   ├── rag/knowledge_ingestor.py        # :5001  ingest + retrieval API
 │   ├── agents/
-│   │   ├── auditor_agent.py             #   LangGraph node + graph definitions
+│   │   ├── orchestrator.py              #   supervisor-led 9-agent LangGraph
+│   │   ├── schemas.py / tools.py        #   typed state, tool gateway
+│   │   ├── auditor_agent.py             #   legacy single-agent graphs
 │   │   ├── init_auditor.py              # :5000  agent HTTP API
 │   │   └── filtered_kong_data.json      #   cached inventory (offline fallback)
-│   ├── knowledge_base/                  # the policy corpus that gets ingested
+│   ├── knowledge_base/                  # versioned policy corpus
 │   ├── kong_config/                     # Kong Konnect declarative config
 │   ├── artifacts/                       # generated reports (gitignored)
 │   └── tests/                           # pytest suite, fully offline
+├── docs/                                # architecture, API, setup, eval + demo guides
 └── frontend/                            # :3000  React + Tailwind dashboard
     └── src/
         ├── api/client.js                #   every backend call goes through here
         ├── components/                  #   Header, Sidebar, Login, ui primitives
-        └── pages/                       #   Overview, KnowledgeBase, Audit, Remediation
+        └── pages/                       #   Investigation, Findings, Remediation
+                                         #   Centre, Model Analytics + originals
 ```
 
 ---
@@ -516,9 +552,22 @@ work no matter which directory you launch them from.
 | `REDIS_HOST` | `localhost` | Redis Stack hostname |
 | `REDIS_PORT` | `6379` | Redis port |
 | `REDIS_PASSWORD` | _(none)_ | Optional auth |
+| `REDIS_USERNAME` | _(none)_ | Redis ACL username (use least-privilege) |
 | `INDEX_NAME` | `security_auditor_index` | RediSearch index name |
 | `KEY_PREFIX` | `embedding:` | Key prefix the index covers |
 | `VECTOR_DIMENSIONS` | `1536` | **Must match the embedding model** |
+
+### API auth (both Flask apps)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `ADMIN_API_KEYS` | _(none)_ | Full access: ingest, deletes, live execution |
+| `OPERATOR_API_KEYS` | _(none)_ | Run/resume assessments, approve, simulate |
+| `VIEWER_API_KEYS` | _(none)_ | Read-only |
+| `ALLOWED_ORIGINS` | _(none)_ | CORS allowlist; unset means `*` |
+
+Comma-separated lists. No keys anywhere = single-user mode (open). Dashboard
+sign-in verifies the key against the backend; keys live in sessionStorage.
 
 ### Knowledge base
 
@@ -574,6 +623,9 @@ Sending a Konnect PAT as `kong-admin-token` returns **401**; requesting a bare
 | `KONG_ADMIN_VERIFY_SSL` | Defaults to `true` for Konnect, `false` for self-managed |
 | `KONG_PAGE_SIZE` | Page size when listing entities (default `1000`) |
 | `KONG_HTTP_TIMEOUT` | Per-request timeout in seconds (default `30`) |
+| `KONG_MAX_RETRIES` / `KONG_RETRY_BACKOFF_S` / `KONG_RETRY_MAX_WAIT_S` | Transient retries: 429 honours Retry-After within the cap (defaults `2` / `1` / `5`) |
+| `KONG_SNAPSHOT_KEY` / `KONG_SNAPSHOT_STALE_S` | Redis snapshot cache + staleness horizon (defaults `kong:snapshot:latest` / `3600`) |
+| `KONG_WRITE_ENABLED` | Live remediation writes; default `false` (simulation only) |
 | `KONG_AI_PROXY_HOSTNAME` | Optional — Kong AI Gateway base URL |
 | `KONG_API_KEY` | Optional — `x-api-key` for the AI Gateway |
 
@@ -614,11 +666,16 @@ GET /api/v1/ai-agents/health  →  config.tls.system_trust_store: true
 
 Last resort only: `KONG_ADMIN_VERIFY_SSL = false`.
 
-### LLM limits
+### LLM limits & routing
 
 | Variable | Default | Purpose |
 |---|---|---|
 | `LLM_MAX_TOKENS` | `8000` | Output cap per call. Reasoning models count reasoning tokens against this. |
+| `LLM_TIMEOUT` | `120` | Per-call timeout, seconds |
+| `ROUTER_MAX_RETRIES` | `2` | Bounded retries (retryable errors only) |
+| `CIRCUIT_THRESHOLD` / `CIRCUIT_COOLDOWN_S` | `5` / `60` | Circuit breaker |
+| `META_ONLY` | `true` | Forbid non-Meta reasoning providers |
+| `LLM_FALLBACK_ORDER` | `none` | Opt-in fallback chain (observable, never silent) |
 | `REMEDIATION_BATCH_SIZE` | `5` | Findings per remediation call |
 
 > Remediation is **batched** on purpose. One call for all findings grows with the
@@ -634,7 +691,8 @@ Last resort only: `KONG_ADMIN_VERIFY_SSL = false`.
 |---|---|---|
 | `AGENTS_PORT` | `5000` | AI Agents API |
 | `KNOWLEDGE_PORT` | `5001` | Knowledge Ingestor |
-| `REDIS_TEST_PORT` | `5002` | Redis harness |
+
+(The Redis harness listens on a fixed `5002`.)
 
 ---
 
@@ -678,7 +736,17 @@ curl -X POST http://localhost:5001/api/v1/knowledge/search `
      -H "Content-Type: application/json" `
      -d '{\"query\": \"Which plugin enforces authentication?\", \"top_k\": 3}'
 
-# 4. Run the audit, then remediation
+# 4a. Run a supervisor-led investigation (multi-agent path)
+curl -X POST http://localhost:5000/api/v1/ai-agents/assess `
+     -H "Content-Type: application/json" `
+     -d '{\"selected_standards\": [\"OWASP API Top 10\", \"GDPR\"]}'
+
+# 4b. Poll the event trace, then approve a proposed change
+curl http://localhost:5000/api/v1/ai-agents/assess/<id>
+curl -X POST http://localhost:5000/api/v1/ai-agents/assess/<id>/changes/<change_id>/approve `
+     -H "Content-Type: application/json" -d '{}'
+
+# 4c. Legacy single-agent path (still supported)
 curl -X POST http://localhost:5000/api/v1/ai-agents/audit `
      -H "Content-Type: application/json" `
      -d '{\"selected_standards\": [\"OWASP API Top 10\", \"GDPR\"]}'
@@ -686,6 +754,8 @@ curl -X POST http://localhost:5000/api/v1/ai-agents/audit `
 curl -X POST http://localhost:5000/api/v1/ai-agents/remediate `
      -H "Content-Type: application/json" -d '{}'
 ```
+
+(With API keys configured, add `-H "X-API-Key: <key>"` to every call.)
 
 > PowerShell's `curl` is an alias for `Invoke-WebRequest` and quotes JSON differently.
 > For anything non-trivial, use the Postman collection or `curl.exe` explicitly.
@@ -701,10 +771,20 @@ curl -X POST http://localhost:5000/api/v1/ai-agents/remediate `
 | `GET` | `/api/v1/ai-agents/health` | LLM provider, Redis state, policy chunk count, Kong reachability |
 | `GET` | `/api/v1/ai-agents/models` | Model ids the key can use; resolves `model_not_found` |
 | `GET` | `/api/v1/ai-agents/kong/services` | Inventory to be audited, with `source` provenance |
-| `POST` | `/api/v1/ai-agents/audit` | Run the Audit Agent |
-| `POST` | `/api/v1/ai-agents/remediate` | Run the Remediation Agent |
+| `POST` | `/api/v1/ai-agents/audit` | Run the Audit Agent (legacy, still supported) |
+| `POST` | `/api/v1/ai-agents/remediate` | Run the Remediation Agent (legacy, still supported) |
 | `GET` | `/api/v1/ai-agents/audit/report` | Replay the last audit report |
 | `GET` | `/api/v1/ai-agents/remediate/plan` | Replay the last remediation plan |
+| `POST` | `/api/v1/ai-agents/assess` | Start a supervisor-led investigation (`?async=true` to poll) |
+| `GET` | `/api/v1/ai-agents/assess/<id>` | Event trace + status for an investigation |
+| `GET` | `/api/v1/ai-agents/assess/<id>/details` | Full findings, evidence, risk register |
+| `POST` | `/api/v1/ai-agents/assess/<id>/resume` | Resume a paused/failed investigation |
+| `POST` | `/api/v1/ai-agents/assess/<id>/executive-summary` | Muse-written executive summary |
+| `GET` | `/api/v1/ai-agents/llm/calls` | Per-call model trace (name, task, latency) |
+| `GET` | `/api/v1/ai-agents/llm/policy` | Effective routing table |
+| `GET`/`POST` | `/api/v1/ai-agents/assess/<id>/changes…` | Proposals, simulate, approve, execute |
+
+Full request/response shapes: [API reference](docs/api.md).
 
 <details>
 <summary><strong>POST /api/v1/ai-agents/audit</strong></summary>
@@ -856,6 +936,10 @@ Collection variables (`agents_url`, `knowledge_url`, `redis_test_url`) default t
 localhost. **Run Security Audit** stores its report in the `audit_report` variable, so
 **Generate Remediation Plan** works with no copy/paste.
 
+> The collection covers the health, RAG and legacy single-agent endpoints. The
+> multi-agent `assess` / `changes` routes are documented in
+> [docs/api.md](docs/api.md) and are not in the collection yet.
+
 ---
 
 ## Frontend
@@ -867,15 +951,21 @@ npm start          # http://localhost:3000
 npm run build      # production bundle
 ```
 
-Demo credentials: **`ai_champion` / `Meta@123`** (presentation scaffolding — there is
-no backend auth).
+Sign-in uses demo usernames (**admin** / **operator** / **viewer**) with passwords
+from `frontend/.env`, shown on the login page itself. Each account maps to that
+role's API key, so the backend still enforces roles; keys are kept in
+sessionStorage and cleared on sign-out.
 
 | Page | What it does |
 |---|---|
 | **Overview** | Live health of all three services, agent pipeline, quick-start actions |
+| **Investigation** | Live multi-agent runs: plan, agent activity, model used, approvals |
+| **Findings & Evidence** | Risk register with evidence, controls and verification status |
+| **Remediation Centre** | Proposals with diffs + simulation, approve, execute, validate |
+| **Model Analytics** | Model usage, routing policy, retrieval-eval figures |
 | **Knowledge Base** | Ingest the corpus, run vector searches, browse stored chunks |
-| **Security Audit** | Pick standards, view Kong inventory, run the audit, export JSON |
-| **Remediation** | Generate the prioritised plan, severity breakdown, export JSON |
+| **Security Audit** | Legacy single-agent audit: standards, inventory, export JSON |
+| **Remediation** | Legacy single-agent plan: severity breakdown, export JSON |
 
 Endpoints default to localhost and can optionally be overridden in **`frontend\.env`**:
 
@@ -883,7 +973,16 @@ Endpoints default to localhost and can optionally be overridden in **`frontend\.
 REACT_APP_AGENTS_URL=http://localhost:5000
 REACT_APP_KNOWLEDGE_URL=http://localhost:5001
 REACT_APP_REDIS_TEST_URL=http://localhost:5002
+REACT_APP_ADMIN_PASSWORD=Admin@123
+REACT_APP_OPERATOR_PASSWORD=Operator@123
+REACT_APP_VIEWER_PASSWORD=Viewer@123
+REACT_APP_ADMIN_KEY=<must match backend ADMIN_API_KEYS>
+REACT_APP_OPERATOR_KEY=<must match backend OPERATOR_API_KEYS>
+REACT_APP_VIEWER_KEY=<must match backend VIEWER_API_KEYS>
 ```
+
+Copy `frontend/.env.example` to `frontend/.env` (gitignored) and paste the keys.
+After changing it, restart `npm start` - Create React App reads `.env` at startup.
 
 ---
 
@@ -894,12 +993,23 @@ backend\.venv\Scripts\Activate.ps1
 python -m pytest backend\tests -q
 ```
 
-54 tests covering every agent node, both compiled graphs, Konnect vs self-managed auth
-and entity paths, pagination, the route-plugin rollup, remediation batching and its
-per-finding retry, severity mapping, JSON-parsing failure paths, the Kong fallback, and
-the **Meta Model API provider** (resolution, model id, parameter fallbacks, fenced-JSON
-parsing, and a full audit-graph run on Meta). The LLM, Kong and Redis are all stubbed, so the
-suite runs offline with no credentials.
+296 backend tests covering every agent node, both legacy graphs, the supervisor-led
+orchestrator (parallelism, failure, resume, approval), the policy / threat / risk /
+remediation engines, Konnect vs self-managed auth and entity paths, pagination, the
+route-plugin rollup, remediation batching and its per-finding retry, severity mapping,
+JSON-parsing failure paths, the Kong fallback and snapshots, deterministic RAG ingestion
+and retrieval, API-key auth and the hash-chained audit log, and the **Meta Model API
+provider** (resolution, model id, parameter fallbacks, fenced-JSON parsing, and a full
+audit-graph run on Meta). The LLM, Kong and Redis are all stubbed, so the suite runs
+offline with no credentials. The frontend adds 4 component smoke tests
+(`npm test -- --watchAll=false` from `frontend/`).
+
+```powershell
+python backend\eval\run_retrieval_eval.py --store fake   # 10 tasks; hit_rate 1.0, MRR 0.95
+python backend\eval\run_eval.py --compare mock:good mock:weak   # judge check, 6 mock tasks
+```
+
+Full figures and what was *not* verified live: [test report](docs/test-report.md).
 
 ---
 
@@ -928,16 +1038,33 @@ suite runs offline with no credentials.
 | `Cannot find module 'tailwind-scrollbar'` | `cd frontend && npm install`. The plugin now loads optionally, so this should no longer break the build. |
 | Two servers on one port (Windows) | Windows permits duplicate binds and the **older** process wins, so you can serve stale code. Check with `Get-NetTCPConnection -LocalPort 5001 -State Listen`, then `Stop-Process -Id <pid> -Force`. |
 | Changes not taking effect | A `debug=True` Flask reloader may still be holding the port. Stop every `python.exe` and restart. |
+| `401` from the backend with a key set | Wrong key, or the key's role is too low for the route (ingest/deletes need admin). Keys are comma-separated in `ADMIN_API_KEYS` / `OPERATOR_API_KEYS` / `VIEWER_API_KEYS`. |
+| Change executes as simulation only | `KONG_WRITE_ENABLED` defaults to `false`. Live writes also need the change approved and a token with write scope. |
+| Assessment says `cached` / `stale` | Kong was unreachable so discovery served the Redis snapshot. Check `snapshot_source` / `snapshot_age_s`; older than `KONG_SNAPSHOT_STALE_S` (1h) is flagged stale, never presented as live. |
+
+---
+
+## Documentation
+
+Beyond this README: [Setup](docs/setup.md) · [Architecture](docs/architecture.md)
+(+ [multi-agent](docs/multi-agent-architecture.md)) · [API reference](docs/api.md) ·
+[Environment](docs/environment.md) · [Model routing](docs/model-routing-policy.md) ·
+[Test report](docs/test-report.md) · [Kong integration](docs/kong-integration.md) ·
+[Controlled remediation](docs/controlled-remediation.md) ·
+[5-minute demo](docs/demo-script.md) ·
+[3-minute architecture explainer](docs/architecture-explainer.md) ·
+[Why Muse Spark](docs/why-muse-spark.md)
 
 ---
 
 ## Technology stack
 
 - **Models** — **Meta Model API** (`muse-spark-1.3`, Muse Spark series) · **Muse Code** (development)
-- **Backend** — Python 3.11+ · Flask · LangGraph · Redis Stack (RediSearch) · NumPy
+- **Backend** — Python 3.11+ · Flask · LangGraph (supervisor + 9 logical agents) · Redis Stack (RediSearch) · NumPy
+- **Providers** — Meta (primary reasoning) · Kong AI Gateway + Azure OpenAI (configured fallbacks)
 - **Frontend** — React 19 · Tailwind CSS 3 · lucide-react · Create React App
-- **Gateway** — Kong API Gateway 3.x · Kong AI Gateway (AI Proxy, RAG Injector, Prompt Guard, Response Transformer)
-- **Tooling** — Postman · pytest · Docker Compose
+- **Gateway** — Kong Gateway 3.x / Konnect, read-only Admin API discovery + allowlisted remediation writes
+- **Tooling** — Postman · pytest (296 tests) · model + retrieval eval suites · Docker Compose
 
 ---
 

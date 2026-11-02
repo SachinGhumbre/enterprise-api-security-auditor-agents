@@ -1,0 +1,64 @@
+[
+  {
+    "id": "retrieve-auth-jwt",
+    "query": "jwt oauth2 token authentication login bearer",
+    "expected_sources": ["01_authentication_policy.txt"],
+    "top_k": 3
+  },
+  {
+    "id": "retrieve-auth-key-auth",
+    "query": "key-auth API keys gateway credentials",
+    "expected_sources": ["01_authentication_policy.txt",
+                         "kong_api_security_mapping.md"],
+    "top_k": 3
+  },
+  {
+    "id": "retrieve-authz-acl",
+    "query": "acl role based access control authorization permissions roles",
+    "expected_sources": ["02_authorization_policy.txt"],
+    "top_k": 3
+  },
+  {
+    "id": "retrieve-rate-limit",
+    "query": "rate limiting throttle requests quota spike arrest bursts",
+    "expected_sources": ["03_rate_limiting.txt"],
+    "top_k": 3
+  },
+  {
+    "id": "retrieve-input-validation",
+    "query": "input validation request schema validator payload",
+    "expected_sources": ["04_input_validation.txt"],
+    "top_k": 3
+  },
+  {
+    "id": "retrieve-logging",
+    "query": "logs audit trail http-log syslog audit events",
+    "expected_sources": ["05_logging_audit.txt"],
+    "top_k": 3
+  },
+  {
+    "id": "retrieve-gdpr",
+    "query": "GDPR personal data privacy PII data minimization consent",
+    "expected_sources": ["06_gdpr_privacy.txt"],
+    "top_k": 3
+  },
+  {
+    "id": "retrieve-auth-question",
+    "query": "which plugins enforce authentication on the gateway",
+    "expected_sources": ["01_authentication_policy.txt"],
+    "top_k": 3
+  },
+  {
+    "id": "retrieve-abuse",
+    "query": "API abuse protection excessive requests fair use",
+    "expected_sources": ["03_rate_limiting.txt"],
+    "top_k": 3
+  },
+  {
+    "id": "retrieve-filtered-category",
+    "query": "mandatory plugins to comply",
+    "filters": {"category": "logging"},
+    "expected_sources": ["05_logging_audit.txt"],
+    "top_k": 3
+  }
+]
