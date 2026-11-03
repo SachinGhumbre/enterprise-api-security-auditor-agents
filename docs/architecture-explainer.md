@@ -9,7 +9,8 @@ API running a LangGraph supervisor graph with nine agents; a knowledge
 service doing versioned RAG over Redis Stack. The graph reads Kong
 through a read-only Admin API integration and reasons through Meta's
 Model API on Muse Spark 1.3. State checkpoints per assessment, and every
-security-relevant event lands in a hash-chained audit log."
+security-relevant event lands in a hash-chained audit log. A floating
+copilot on every page chats over the same APIs."
 
 "The key structural decision: the model proposes, code disposes.
 Verification, risk scoring, budgets, approvals and the Kong write
@@ -41,7 +42,7 @@ becomes verified. Two: failure honesty — every fallback degrades
 explicitly with a badge and a reason, from stale inventory to model
 outages. Three: least privilege end to end — per-agent tool allowlists,
 API roles, and a write path that defaults to simulation. Four:
-measurement — 296 backend tests, retrieval hit rate 1.0 on a curated
+measurement — 378 backend tests, retrieval hit rate 1.0 on a curated
 set, and a routing table you can inspect live that pins every reasoning
 task to Muse Spark 1.3."
 

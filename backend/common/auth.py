@@ -71,6 +71,14 @@ def guard(request, rules):
         return None
     path = request.path or ""
     method = (request.method or "GET").upper()
+    if method == "OPTIONS":
+        # CORS preflight: browsers send it without credentials by design,
+        # so authenticating it would block every cross-origin call that
+        # carries an API-key header. The real request still goes through
+        # the rules below; the preflight itself returns no data.
+        g.api_role = "open"
+        g.api_key_fp = None
+        return None
     if not path.startswith("/api/"):
         return None
     required = None

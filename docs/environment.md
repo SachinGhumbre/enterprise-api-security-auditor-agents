@@ -75,6 +75,17 @@ No keys anywhere = single-user mode (all endpoints open).
 | `KONG_WRITE_ENABLED` | `false` | Live execution master switch |
 | `KONG_AI_PROXY_HOSTNAME` / `KONG_API_KEY` | _(none)_ | Optional AI Gateway LLM route |
 
+## AI Assistant (chat copilot)
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `ASSISTANT_CONV_TTL_S` | `2592000` (30 days) | Conversation history retention in Redis |
+| `ASSISTANT_MAX_MESSAGES` | `200` | Stored messages per conversation (cap) |
+| `ASSISTANT_CONTEXT_MESSAGES` | `20` | Recent messages sent as model context |
+| `ASSISTANT_SUMMARY_THRESHOLD` | `40` | Messages before rolling summarization kicks in |
+| `ASSISTANT_MAX_TOOL_CALLS` | `8` | Tool calls allowed per chat turn |
+| `ASSISTANT_LLM_BUDGET` | `4` | Model calls allowed per chat turn |
+
 ## Misc
 
 | Variable | Default | Purpose |

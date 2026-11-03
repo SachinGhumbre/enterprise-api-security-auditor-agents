@@ -20,6 +20,9 @@ treat this as a baseline, not a certification.
   `REACT_APP_API_KEY` build-time fallback. A 401 mid-session signs out
   with a notice. The password check is demo UX only — role enforcement
   stays server-side via the mapped key.
+- CORS preflights (`OPTIONS`) bypass auth by design: browsers send them
+  without credentials and they return no data. The real request still
+  authenticates; without the bypass, key-based dashboard calls fail.
 - Configure: `ADMIN_API_KEYS`, `OPERATOR_API_KEYS`, `VIEWER_API_KEYS`
   (comma-separated), `ALLOWED_ORIGINS` for CORS.
 

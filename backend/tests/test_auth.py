@@ -107,3 +107,20 @@ def test_redis_client_uses_configured_username(monkeypatch):
         monkeypatch.setattr(vector_store, "_client", None)
     assert seen.get("username") == "auditor-ro"
     assert real_redis is not None
+
+
+def test_options_preflight_bypasses_auth(monkeypatch):
+    """CORS preflights carry no credentials by design; 401ing them blocks
+    every cross-origin dashboard call that sends an API-key header."""
+    _keys(monkeypatch)
+    from agents.init_auditor import app as agents_app
+    from rag.knowledge_ingestor import app as knowledge_app
+
+    agents = agents_app.test_client()
+    assert agents.get("/api/v1/ai-agents/assistant/prompts").status_code == 401
+    preflight = agents.options("/api/v1/ai-agents/assistant/prompts")
+    assert preflight.status_code == 200
+    assert "Access-Control-Allow-Origin" in preflight.headers
+
+    knowledge = knowledge_app.test_client()
+    assert knowledge.options("/api/v1/knowledge/search").status_code == 200

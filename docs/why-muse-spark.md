@@ -1,6 +1,6 @@
 # Why Muse Spark 1.3 Is Central
 
-Six jobs in this system require judgment over messy context, and all six
+Nine jobs in this system require judgment over messy context, and all nine
 route to Muse Spark 1.3 through one enforced routing table — no agent
 picks its own model, and an empty model id refuses to call rather than
 falling back to a default:
@@ -16,6 +16,12 @@ falling back to a default:
    (rationale, impact, breaking changes, validation steps).
 6. **Executive explanation** — board-ready narrative over verified
    findings only.
+7. **Assistant intent** — classifying ambiguous chat messages into a
+   strict intent schema (clear messages classify deterministically).
+8. **Assistant Q&A** — security explanations grounded in retrieved
+   policy evidence and inventory facts.
+9. **Assistant synthesis** — faithful write-ups of cross-agent results
+   with evidence citations and no invented execution claims.
 
 The division of labour is deliberate: Spark reasons and explains;
 deterministic code verifies claims against Kong inventory, computes

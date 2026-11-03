@@ -204,6 +204,14 @@ REMEDIATION_BATCH_SIZE = get_int("REMEDIATION_BATCH_SIZE", 5)
 # --- Artifacts ---------------------------------------------------------------
 ARTIFACT_DIR = get("ARTIFACT_DIR", os.path.join(BACKEND_DIR, "artifacts"))
 
+# --- Assistant (conversational copilot) ---------------------------------------
+ASSISTANT_CONV_TTL_S = get_int("ASSISTANT_CONV_TTL_S", 30 * 24 * 3600)
+ASSISTANT_MAX_MESSAGES = get_int("ASSISTANT_MAX_MESSAGES", 200)
+ASSISTANT_CONTEXT_MESSAGES = get_int("ASSISTANT_CONTEXT_MESSAGES", 20)
+ASSISTANT_SUMMARY_THRESHOLD = get_int("ASSISTANT_SUMMARY_THRESHOLD", 40)
+ASSISTANT_MAX_TOOL_CALLS = get_int("ASSISTANT_MAX_TOOL_CALLS", 8)
+ASSISTANT_LLM_BUDGET = get_int("ASSISTANT_LLM_BUDGET", 4)
+
 
 def resolve_llm_provider():
     if LLM_PROVIDER in ("meta", "kong", "azure"):

@@ -285,7 +285,7 @@ export default function Overview({ onNavigate }) {
             <Boxes className="h-4 w-4" /> Ingest policies
           </button>
           <button className="btn-ghost" onClick={() => onNavigate('audit')}>
-            <ShieldCheck className="h-4 w-4" /> Single-agent audit
+            <ShieldCheck className="h-4 w-4" /> Express audit
           </button>
           <button className="btn-ghost" onClick={() => onNavigate('remediation')}>
             <Server className="h-4 w-4" /> Generate remediation

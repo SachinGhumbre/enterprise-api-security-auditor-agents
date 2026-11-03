@@ -14,12 +14,23 @@ const DEMO_ACCOUNTS = [
 ];
 
 function readEnv(name) {
-  return (typeof process !== 'undefined' && process.env && process.env[name]) || '';
+  // Guard on `process.env`, never on bare `process`: webpack's DefinePlugin
+  // inlines `process.env` as an object literal, but `process` itself does not
+  // exist in the browser bundle, so a bare-process check is always false there
+  // and would silently discard every value.
+  const env = typeof process.env !== 'undefined' ? process.env : undefined;
+  const raw = (env && env[name]) || '';
+  // Hand-edited .env lines often carry stray spaces (KEY = value); dotenv
+  // trims them, but a value injected via the shell may not be trimmed.
+  return String(raw).trim();
 }
 
 function Login({ onLogin }) {
-  // Visible in devtools when the server started before frontend/.env existed.
-  if (!DEMO_ACCOUNTS.some((a) => readEnv(a.passwordEnv)) && typeof console !== 'undefined') {
+  // React bakes REACT_APP_* vars in when the dev server (or build) starts, so
+  // editing frontend/.env afterwards leaves every password empty until the
+  // server is restarted — the page must say so instead of failing silently.
+  const passwordsConfigured = DEMO_ACCOUNTS.some((a) => readEnv(a.passwordEnv));
+  if (!passwordsConfigured && typeof console !== 'undefined') {
     console.warn('Demo passwords missing: restart `npm start` so it picks up frontend/.env.');
   }
   const [username, setUsername] = useState('operator');
@@ -34,7 +45,8 @@ function Login({ onLogin }) {
     try {
       const account = DEMO_ACCOUNTS.find((a) => a.username === username);
       const expected = account ? readEnv(account.passwordEnv) : '';
-      if (!account || !expected || password !== expected) {
+      // Demo UX only: ignore accidental whitespace around a pasted password.
+      if (!account || !expected || password.trim() !== expected) {
         setError('Incorrect password.');
         setLoading(false);
         return;
@@ -77,6 +89,17 @@ function Login({ onLogin }) {
             Agentic AI compliance auditing for API Gateway
           </p>
         </div>
+
+        {!passwordsConfigured ? (
+          <div
+            role="alert"
+            className="mb-5 rounded-lg border border-[#ecd9a8] bg-[#fdf3dc] px-4 py-2.5
+                       text-sm font-medium text-[#7a5b12]"
+          >
+            Demo passwords not loaded. Restart `npm start` after creating
+            frontend/.env — or rebuild if serving a production build.
+          </div>
+        ) : null}
 
         <form
           onSubmit={handleSubmit}
@@ -148,10 +171,6 @@ function Login({ onLogin }) {
                 );
               })}
             </dl>
-            <p className="mt-2.5 text-xs text-ink-secondary">
-              Each account maps to that role&apos;s API key. The key stays in this
-              tab and is cleared on sign-out.
-            </p>
           </div>
         </form>
       </div>

@@ -1,0 +1,19 @@
+{
+  "assessment_id": "asm-4758c90639fd",
+  "actions": 8,
+  "by_severity": {
+    "Medium": 5,
+    "Critical": 3
+  },
+  "risk": {},
+  "validation_passed": true,
+  "change_proposals": 1,
+  "excluded": [],
+  "degraded_reasons": [
+    "risk failed: TypeError: '<' not supported between instances of 'str' and 'NoneType'"
+  ],
+  "objective": "Assess kong-test api",
+  "tiers": {},
+  "coverage_totals": {},
+  "note": "Approval authorises export of this plan. Nothing is applied to Kong by this workflow."
+}

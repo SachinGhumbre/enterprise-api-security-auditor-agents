@@ -9,13 +9,14 @@ flowchart TB
     USER["Security auditor"]
 
     subgraph UI["Dashboard :3000"]
-        PORTAL["React SPA<br/>Investigation · Findings<br/>Remediation · Analytics"]
+        PORTAL["React SPA<br/>Investigation · Findings<br/>Remediation · Analytics<br/>Assistant chat (floating)"]
     end
 
     subgraph API["Agents API :5000"]
         GW["Auth guard<br/>viewer / operator / admin"]
         GRAPH["LangGraph supervisor graph<br/>9 agents · interrupts · budgets"]
         AUX["Changes · Risk lifecycle<br/>LLM calls · Eval endpoints"]
+        AST["Assistant graph<br/>chat · tools · tasks"]
     end
 
     subgraph RAG["Knowledge :5001"]
@@ -34,6 +35,9 @@ flowchart TB
     PORTAL --> GW
     GW --> GRAPH
     GW --> AUX
+    GW --> AST
+    AST --> GRAPH
+    AST --> RS
     PORTAL --> ING
     GRAPH --> RS
     GRAPH --> KONG
@@ -54,7 +58,7 @@ flowchart TB
 | 4. Discover | Kong inventory, live → Redis snapshot → file, with provenance | `common/kong_inventory.py` |
 | 5. Investigate | Security / compliance / threat agents run in parallel, fan-in | orchestrator investigators + aggregate |
 | 6. Correlate | Deduplicated, versioned-scored risk register | `common/risks.py` |
-| 7. Reason | Muse Spark 1.3 via central router (6 reasoning tasks) | `common/router.py`, `common/llm.py` |
+| 7. Reason | Muse Spark 1.3 via central router (9 reasoning tasks: 6 investigation + 3 assistant) | `common/router.py`, `common/llm.py` |
 | 8. Propose | Structured change proposals + simulation + residual risk | `common/changes.py` |
 | 9. Validate | Plan checks before approval is requested | orchestrator validation |
 | 10. Approve | Human interrupt; unknown answers resolve to reject | orchestrator governance |
@@ -72,3 +76,6 @@ flowchart TB
   approvals and execution gates all run outside the LLM.
 - Writes are impossible by default: live Kong execution needs a recorded
   approval, in-scope target, allowlisted op, and `KONG_WRITE_ENABLED=true`.
+- The chat assistant holds a read + draft-only tool allowlist: no
+  approve, execute or persist tool exists for it, so chat can never
+  change anything regardless of what it is asked.

@@ -1,0 +1,122 @@
+[
+  {
+    "serviceName": "Healthcheck",
+    "policyName": "GDPR",
+    "issue": "No plugins enabled. Mapping marks JWT Authentication as Mandatory for GDPR and OAuth2 / OpenID Connect as Mandatory for GDPR. Evidence: kong_api_security_mapping.md",
+    "missingPlugin": "JWT Authentication, OAuth2 / OpenID Connect",
+    "recommendedAction": "Enable and configure JWT Authentication and OAuth2 / OpenID Connect plugins on Healthcheck service to enforce token-based and federated authentication",
+    "severity": "Medium",
+    "owner": "API Platform Team",
+    "estimatedEffort": "Medium - 1-2 days",
+    "impact": "Unauthenticated access risk; enabling authentication ensures only verified identities can access the service",
+    "securityStandardReference": "GDPR Article 32 - Security of Processing"
+  },
+  {
+    "serviceName": "Healthcheck",
+    "policyName": "OWASP API Top 10",
+    "issue": "No plugins enabled. Mapping marks JWT Authentication as Mandatory for OWASP API Top 10 and OAuth2 / OpenID Connect as Mandatory for OWASP API Top 10. Evidence: kong_api_security_mapping.md",
+    "missingPlugin": "JWT Authentication, OAuth2 / OpenID Connect",
+    "recommendedAction": "Enable and configure JWT Authentication and OAuth2 / OpenID Connect plugins on Healthcheck service to remediate broken authentication risk",
+    "severity": "Medium",
+    "owner": "API Platform Team",
+    "estimatedEffort": "Medium - 1-2 days",
+    "impact": "Prevents broken authentication exploits and unauthorized API access",
+    "securityStandardReference": "OWASP API Top 10 2023 - API2 Broken Authentication"
+  },
+  {
+    "serviceName": "MyMetaAIGatewayService",
+    "policyName": "GDPR",
+    "issue": "Mapping lists JWT Authentication as Mandatory for GDPR and OAuth2 / OpenID Connect as Mandatory for GDPR; service has acl, ai-proxy-advanced, key-auth only and lacks jwt and oauth2. Evidence: kong_api_security_mapping.md and Authentication Policy v1.0",
+    "missingPlugin": "jwt, oauth2",
+    "recommendedAction": "Enable and configure jwt and oauth2 plugins on MyMetaAIGatewayService to complement existing key-auth and satisfy mandatory authentication requirements",
+    "severity": "Medium",
+    "owner": "API Platform Team",
+    "estimatedEffort": "Medium - 1-2 days",
+    "impact": "Strengthens identity verification for PII handling and ensures GDPR lawful and secure processing",
+    "securityStandardReference": "GDPR Article 32 - Security of Processing"
+  },
+  {
+    "serviceName": "MyMetaAIGatewayService",
+    "policyName": "OWASP API Top 10",
+    "issue": "Mapping lists JWT Authentication as Mandatory for OWASP API Top 10 and OAuth2 / OpenID Connect as Mandatory for OWASP API Top 10; service has acl, ai-proxy-advanced, key-auth only and lacks jwt and oauth2. Evidence: kong_api_security_mapping.md",
+    "missingPlugin": "jwt, oauth2",
+    "recommendedAction": "Enable and configure jwt and oauth2 plugins on MyMetaAIGatewayService to address broken authentication findings",
+    "severity": "Medium",
+    "owner": "API Platform Team",
+    "estimatedEffort": "Medium - 1-2 days",
+    "impact": "Reduces risk of authentication bypass and token forgery on AI gateway service",
+    "securityStandardReference": "OWASP API Top 10 2023 - API2 Broken Authentication"
+  },
+  {
+    "serviceName": "new-service-20260525181340158",
+    "policyName": "GDPR",
+    "issue": "No plugins enabled; JWT Authentication and OAuth2 / OpenID Connect are Mandatory for GDPR per mapping. Evidence: kong_api_security_mapping.md",
+    "missingPlugin": "JWT Authentication, OAuth2 / OpenID Connect",
+    "recommendedAction": "Enable and configure JWT Authentication and OAuth2 / OpenID Connect plugins on new-service-20260525181340158 service",
+    "severity": "Medium",
+    "owner": "API Platform Team",
+    "estimatedEffort": "Medium - 1-2 days",
+    "impact": "Establishes baseline authentication controls to protect personal data from unauthorized access",
+    "securityStandardReference": "GDPR Article 5 and Article 32 - Lawfulness and Security of Processing"
+  },
+  {
+    "serviceName": "new-service-20260525181340158",
+    "policyName": "OWASP API Top 10",
+    "issue": "No plugins enabled; JWT Authentication and OAuth2 / OpenID Connect are Mandatory for OWASP API Top 10 per mapping.",
+    "missingPlugin": "JWT Authentication, OAuth2 / OpenID Connect",
+    "recommendedAction": "Enable jwt and openid-connect plugins in Kong Gateway for new-service-20260525181340158 to enforce token-based and federated authentication as required Mandatory by kong_api_security_mapping.md and Authentication Policy v1.0",
+    "severity": "Medium",
+    "owner": "API Platform Team",
+    "estimatedEffort": "Medium - 4-6 hours",
+    "impact": "Unauthenticated exposure enables broken authentication attacks leading to unauthorized access and data breach",
+    "securityStandardReference": "OWASP API Top 10 2023 - API2:2023 Broken Authentication"
+  },
+  {
+    "serviceName": "orders-api",
+    "policyName": "GDPR",
+    "issue": "Enabled plugin [ai-mcp-proxy] does not satisfy GDPR authentication requirements; mandatory plugins JWT Authentication and OAuth2 / OpenID Connect are missing.",
+    "missingPlugin": "JWT Authentication, OAuth2 / OpenID Connect",
+    "recommendedAction": "Enable jwt and openid-connect plugins in Kong Gateway for orders-api to satisfy GDPR Mandatory authentication requirements per kong_api_security_mapping.md; ai-mcp-proxy does not provide authentication",
+    "severity": "Medium",
+    "owner": "API Platform Team",
+    "estimatedEffort": "Medium - 4-6 hours",
+    "impact": "Missing authentication risks unlawful processing and unauthorized access to personal data leading to GDPR non-compliance",
+    "securityStandardReference": "GDPR Article 32 - Security of Processing"
+  },
+  {
+    "serviceName": "orders-api",
+    "policyName": "OWASP API Top 10",
+    "issue": "Enabled plugin [ai-mcp-proxy] does not satisfy OWASP API Top 10 authentication requirements; mandatory plugins JWT Authentication and OAuth2 / OpenID Connect are missing.",
+    "missingPlugin": "JWT Authentication, OAuth2 / OpenID Connect",
+    "recommendedAction": "Enable jwt and openid-connect plugins in Kong Gateway for orders-api to enforce authentication as required Mandatory by kong_api_security_mapping.md; ai-mcp-proxy does not satisfy authentication",
+    "severity": "Medium",
+    "owner": "API Platform Team",
+    "estimatedEffort": "Medium - 4-6 hours",
+    "impact": "Lack of strong authentication enables broken authentication and unauthorized API access",
+    "securityStandardReference": "OWASP API Top 10 2023 - API2:2023 Broken Authentication"
+  },
+  {
+    "serviceName": "users-api",
+    "policyName": "GDPR",
+    "issue": "Service enables only ai-mcp-proxy with no authentication. Mapping table marks JWT Authentication and OAuth2 / OpenID Connect as Mandatory for GDPR.",
+    "missingPlugin": "JWT Authentication, OAuth2 / OpenID Connect",
+    "recommendedAction": "Enable jwt and openid-connect plugins in Kong Gateway for users-api to meet GDPR Mandatory authentication per kong_api_security_mapping.md",
+    "severity": "Medium",
+    "owner": "API Platform Team",
+    "estimatedEffort": "Medium - 4-6 hours",
+    "impact": "Unauthenticated access to user APIs risks PII exposure and GDPR breach notification obligations",
+    "securityStandardReference": "GDPR Article 32 - Security of Processing"
+  },
+  {
+    "serviceName": "users-api",
+    "policyName": "OWASP API Top 10",
+    "issue": "Service enables only ai-mcp-proxy with no authentication. Mapping table marks JWT Authentication and OAuth2 / OpenID Connect as Mandatory for OWASP API Top 10.",
+    "missingPlugin": "JWT Authentication, OAuth2 / OpenID Connect",
+    "recommendedAction": "Enable jwt and openid-connect plugins in Kong Gateway for users-api to meet OWASP API Top 10 Mandatory authentication per kong_api_security_mapping.md",
+    "severity": "Medium",
+    "owner": "API Platform Team",
+    "estimatedEffort": "Medium - 4-6 hours",
+    "impact": "Missing authentication exposes user accounts to takeover and excessive data exposure",
+    "securityStandardReference": "OWASP API Top 10 2023 - API2:2023 Broken Authentication"
+  }
+]

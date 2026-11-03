@@ -44,6 +44,10 @@ CORS(app, origins=config.ALLOWED_ORIGINS or "*")
 # configured (single-user default).
 AUTH_RULES = [
     ({"GET"}, f"{API_PREFIX}/health", None),
+    # Assistant routes are viewer-level (first match wins, so this precedes
+    # the generic API_PREFIX rules). Operator-only intents are rejected
+    # inside the assistant graph with a clear message.
+    (None, f"{API_PREFIX}/assistant", "viewer"),
     ({"POST"}, f"{API_PREFIX}/assess", "operator"),
     ({"POST"}, f"{API_PREFIX}/audit", "operator"),
     ({"POST"}, f"{API_PREFIX}/remediate", "operator"),
@@ -919,6 +923,176 @@ def executive_summary(assessment_id):
         "executive_summary": exec_response.text,
         "calls": [risk_response.to_dict(), exec_response.to_dict()],
     }), 200
+
+
+# --- AI Security Assistant (conversational copilot) -------------------------------
+
+def _assistant_owner():
+    """(owner_fp, role) for conversation scoping from the auth guard."""
+    from common import auth as auth_mod
+    from flask import g
+    role = getattr(g, "api_role", None)
+    if not auth_mod.auth_enabled():
+        return "single-user", None
+    if role in (None, "open"):
+        return "anonymous", None
+    return getattr(g, "api_key_fp", None) or "unknown", role
+
+
+@app.route(f"{API_PREFIX}/assistant/prompts", methods=["GET"])
+def assistant_prompts():
+    from agents import assistant
+    return jsonify({"prompts": assistant.suggested_prompts()}), 200
+
+
+@app.route(f"{API_PREFIX}/assistant/conversations", methods=["POST"])
+def assistant_create_conversation():
+    from common import conversations, validation
+    payload = request.get_json(silent=True) or {}
+    try:
+        title = validation.coerce_text(
+            payload.get("title"), "title",
+            max_len=validation.MAX_CONVERSATION_TITLE_CHARS)
+        assessment_id = validation.coerce_text(
+            payload.get("assessment_id"), "assessment_id", max_len=64)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    owner_fp, _ = _assistant_owner()
+    body = conversations.create_conversation(
+        owner_fp, title=title or None,
+        assessment_id=assessment_id or None)
+    from common import audit_log
+    audit_log.record("assistant.conversation_created",
+                     assessment_id=body.get("assessment_id"),
+                     details={"conversation_id": body["conversation_id"]})
+    return jsonify(body), 201
+
+
+@app.route(f"{API_PREFIX}/assistant/conversations", methods=["GET"])
+def assistant_list_conversations():
+    from common import conversations
+    try:
+        limit = int(request.args.get("limit", 50))
+    except (TypeError, ValueError):
+        return jsonify({"error": "'limit' must be an integer."}), 400
+    owner_fp, _ = _assistant_owner()
+    return jsonify({"conversations": conversations.list_conversations(
+        owner_fp, limit=limit if limit > 0 else 50)}), 200
+
+
+@app.route(f"{API_PREFIX}/assistant/conversations/<conversation_id>",
+           methods=["GET"])
+def assistant_get_conversation(conversation_id):
+    from common import conversations
+    try:
+        limit = int(request.args.get("limit", 100))
+    except (TypeError, ValueError):
+        return jsonify({"error": "'limit' must be an integer."}), 400
+    owner_fp, _ = _assistant_owner()
+    want_messages = (request.args.get("messages", "true").lower() != "false")
+    try:
+        body = conversations.get_conversation(
+            owner_fp, conversation_id, include_messages=want_messages,
+            message_limit=limit if limit > 0 else 100)
+    except conversations.ConversationNotFound as exc:
+        return jsonify({"error": str(exc)}), 404
+    return jsonify(body), 200
+
+
+@app.route(f"{API_PREFIX}/assistant/conversations/<conversation_id>",
+           methods=["DELETE"])
+def assistant_delete_conversation(conversation_id):
+    from common import conversations
+    owner_fp, _ = _assistant_owner()
+    if not conversations.delete_conversation(owner_fp, conversation_id):
+        return jsonify({"error": f"No conversation "
+                                 f"'{conversation_id}' found."}), 404
+    from common import audit_log
+    audit_log.record("assistant.conversation_deleted",
+                     details={"conversation_id": conversation_id})
+    return jsonify({"deleted": conversation_id}), 200
+
+
+@app.route(f"{API_PREFIX}/assistant/conversations/<conversation_id>/messages",
+           methods=["POST"])
+def assistant_send_message(conversation_id):
+    from agents import assistant
+    from common import conversations
+    payload = request.get_json(silent=True) or {}
+    try:
+        result = assistant.run_turn(
+            conversation_id, payload.get("message"),
+            assessment_id=payload.get("assessment_id"))
+    except conversations.ConversationNotFound as exc:
+        return jsonify({"error": str(exc)}), 404
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": str(exc)[:500]}), 500
+    return jsonify(result), 200
+
+
+@app.route(f"{API_PREFIX}/assistant/conversations/<conversation_id>/messages/stream",
+           methods=["POST"])
+def assistant_stream_message(conversation_id):
+    import json as _json
+    from flask import Response
+    from agents import assistant
+    from common import conversations
+    payload = request.get_json(silent=True) or {}
+    try:
+        state = assistant.prepare_turn(
+            conversation_id, payload.get("message"),
+            assessment_id=payload.get("assessment_id"))
+    except conversations.ConversationNotFound as exc:
+        return jsonify({"error": str(exc)}), 404
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": str(exc)[:500]}), 500
+
+    header = {
+        "type": "header",
+        "intent": state.get("intent"),
+        "rationale": state.get("rationale", ""),
+        "citations": assistant.collect_citations(
+            state.get("tool_results") or []),
+        "cards": assistant.build_cards(state.get("intent", ""),
+                                       state.get("tool_results") or []),
+        "task": assistant._task_from_results(
+            state.get("tool_results") or []),
+    }
+    deltas, holder = assistant.synthesize_stream(state)
+
+    def _events():
+        yield f"data: {_json.dumps(header)}\n\n"
+        try:
+            for delta in deltas:
+                yield f"data: {_json.dumps({'delta': delta})}\n\n"
+        except Exception as exc:
+            yield f"data: {_json.dumps({'error': str(exc)[:300]})}\n\n"
+            return
+        try:
+            payload = assistant.finish_streamed_turn(
+                state, holder.get("text", ""),
+                holder.get("model", ""))
+        except Exception as exc:
+            yield f"data: {_json.dumps({'error': str(exc)[:300]})}\n\n"
+            return
+        yield f"data: {_json.dumps({'type': 'done', 'message': payload['message'], 'model': payload.get('model', '')})}\n\n"
+
+    return Response(_events(), mimetype="text/event-stream",
+                    headers={"Cache-Control": "no-cache",
+                             "X-Accel-Buffering": "no"})
+
+
+@app.route(f"{API_PREFIX}/assistant/tasks/<task_id>", methods=["GET"])
+def assistant_task_status(task_id):
+    from agents.tools import ToolError, get_assistant_task
+    try:
+        return jsonify(get_assistant_task(task_id)), 200
+    except ToolError as exc:
+        return jsonify({"error": str(exc)}), 404
 
 
 if __name__ == "__main__":

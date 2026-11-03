@@ -1,0 +1,551 @@
+{
+  "summary": {
+    "assessment_id": "asm-f5807494f40b",
+    "run_id": "run-31e246c5",
+    "status": "complete",
+    "degraded": true,
+    "degraded_reasons": [
+      "discovery degraded: No policy evidence retrieved; findings will be quarantined.",
+      "aggregate degraded: 1 finding(s) quarantined for missing evidence.",
+      "risk degraded: Risk explanation unavailable: Tool 'llm_risk_explain' failed: Model returned an empty risk explanation."
+    ],
+    "selected_standards": [
+      "GDPR"
+    ],
+    "kong_source": "kong_admin_api",
+    "kong_live": true,
+    "kong_stale": false,
+    "kong_snapshot_at": "2026-11-03T02:39:21.059672+00:00",
+    "services": 1,
+    "findings": 0,
+    "recovered": 0,
+    "quarantined": 1,
+    "policy_findings": 15,
+    "coverage": {
+      "catalog_version": "1.0.0",
+      "by_domain": {
+        "owasp": {
+          "total": 6,
+          "satisfied": 1,
+          "partial": 0,
+          "unsatisfied": 2,
+          "not_evaluable": 3
+        },
+        "isms": {
+          "total": 3,
+          "satisfied": 0,
+          "partial": 0,
+          "unsatisfied": 2,
+          "not_evaluable": 1
+        },
+        "authentication": {
+          "total": 2,
+          "satisfied": 0,
+          "partial": 0,
+          "unsatisfied": 1,
+          "not_evaluable": 1
+        },
+        "authorisation": {
+          "total": 1,
+          "satisfied": 0,
+          "partial": 0,
+          "unsatisfied": 1,
+          "not_evaluable": 0
+        },
+        "privacy": {
+          "total": 4,
+          "satisfied": 0,
+          "partial": 0,
+          "unsatisfied": 2,
+          "not_evaluable": 2
+        },
+        "encryption": {
+          "total": 2,
+          "satisfied": 0,
+          "partial": 0,
+          "unsatisfied": 0,
+          "not_evaluable": 2
+        },
+        "rate_limiting": {
+          "total": 3,
+          "satisfied": 0,
+          "partial": 0,
+          "unsatisfied": 3,
+          "not_evaluable": 0
+        },
+        "logging": {
+          "total": 3,
+          "satisfied": 0,
+          "partial": 0,
+          "unsatisfied": 3,
+          "not_evaluable": 0
+        },
+        "exposure": {
+          "total": 3,
+          "satisfied": 0,
+          "partial": 0,
+          "unsatisfied": 1,
+          "not_evaluable": 2
+        }
+      },
+      "totals": {
+        "total": 27,
+        "satisfied": 1,
+        "partial": 0,
+        "unsatisfied": 15,
+        "not_evaluable": 11
+      },
+      "gaps": [
+        {
+          "service": "orders-api",
+          "control_id": "OWASP-API2",
+          "title": "Broken Authentication",
+          "outcome": "unsatisfied",
+          "severity": "Critical",
+          "reason": "No authentication plugin enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "OWASP-API4",
+          "title": "Unrestricted Resource Consumption",
+          "outcome": "unsatisfied",
+          "severity": "High",
+          "reason": "'rate-limiting' is not enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "OWASP-API1",
+          "title": "Broken Object Level Authorisation",
+          "outcome": "not_evaluable",
+          "severity": "High",
+          "reason": "Object-level authorisation needs application logic review. Required evidence: API access-control matrix, object-ownership tests."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "OWASP-API5",
+          "title": "Broken Function Level Authorisation",
+          "outcome": "not_evaluable",
+          "severity": "High",
+          "reason": "Function-level authorisation needs role-to-endpoint mapping. Required evidence: role matrix, route role annotations."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "OWASP-API8",
+          "title": "Security Misconfiguration",
+          "outcome": "not_evaluable",
+          "severity": "Medium",
+          "reason": "Misconfiguration review needs plugin configuration values. Required evidence: plugin configs (CORS origins, timeouts, secrets)."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "ISMS-A8.5",
+          "title": "Secure Authentication",
+          "outcome": "unsatisfied",
+          "severity": "Critical",
+          "reason": "No authentication plugin enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "ISMS-A8.16",
+          "title": "Monitoring Activities",
+          "outcome": "unsatisfied",
+          "severity": "Medium",
+          "reason": "None of file-log, http-log, tcp-log, syslog is enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "ISMS-A8.9",
+          "title": "Configuration Management",
+          "outcome": "not_evaluable",
+          "severity": "Medium",
+          "reason": "Configuration management needs process evidence. Required evidence: change records, config baselines."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "AUTH-01",
+          "title": "Strong Customer Authentication",
+          "outcome": "unsatisfied",
+          "severity": "Critical",
+          "reason": "No authentication plugin enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "AUTH-02",
+          "title": "Service-to-Service mTLS",
+          "outcome": "not_evaluable",
+          "severity": "High",
+          "reason": "Service-to-service mTLS needs caller topology. Required evidence: service mesh graph, client certificate inventory."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "AUTHZ-01",
+          "title": "Authorisation Enforced",
+          "outcome": "unsatisfied",
+          "severity": "High",
+          "reason": "'acl' is not enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "GDPR-05",
+          "title": "Accountability Audit Trail",
+          "outcome": "unsatisfied",
+          "severity": "High",
+          "reason": "None of file-log, http-log, tcp-log, syslog is enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "GDPR-25",
+          "title": "Response Data Minimisation",
+          "outcome": "unsatisfied",
+          "severity": "Medium",
+          "reason": "None of response-transformer, exit-transformer is enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "GDPR-32",
+          "title": "Security of Processing",
+          "outcome": "not_evaluable",
+          "severity": "High",
+          "reason": "Processing security needs storage and TLS evidence. Required evidence: datastore encryption proof, TLS termination proof."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "GDPR-LOG",
+          "title": "PII Minimisation in Logs",
+          "outcome": "not_evaluable",
+          "severity": "Medium",
+          "reason": "Log PII minimisation needs log samples and schemas. Required evidence: log samples, field schemas."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "TLS-01",
+          "title": "Transport Encryption",
+          "outcome": "not_evaluable",
+          "severity": "Critical",
+          "reason": "Transport encryption needs listener and route protocol data. Required evidence: route protocols, certificate inventory."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "TLS-02",
+          "title": "Security Headers",
+          "outcome": "not_evaluable",
+          "severity": "Medium",
+          "reason": "Security headers need response configuration. Required evidence: response header policy, HSTS proof."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "RL-01",
+          "title": "Rate Limiting",
+          "outcome": "unsatisfied",
+          "severity": "High",
+          "reason": "'rate-limiting' is not enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "RL-02",
+          "title": "Bot Protection",
+          "outcome": "unsatisfied",
+          "severity": "Medium",
+          "reason": "'bot-detection' is not enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "RL-03",
+          "title": "Payload Limits",
+          "outcome": "unsatisfied",
+          "severity": "Medium",
+          "reason": "'request-size-limiting' is not enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "LOG-01",
+          "title": "Audit Logging",
+          "outcome": "unsatisfied",
+          "severity": "High",
+          "reason": "None of file-log, http-log, tcp-log, syslog is enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "LOG-02",
+          "title": "Security Metrics",
+          "outcome": "unsatisfied",
+          "severity": "Low",
+          "reason": "None of prometheus, statsd, opentelemetry is enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "LOG-03",
+          "title": "Distributed Tracing",
+          "outcome": "unsatisfied",
+          "severity": "Low",
+          "reason": "None of zipkin, opentelemetry is enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "EXP-01",
+          "title": "Network Restriction",
+          "outcome": "unsatisfied",
+          "severity": "Medium",
+          "reason": "'ip-restriction' is not enabled."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "EXP-02",
+          "title": "CORS Policy",
+          "outcome": "not_evaluable",
+          "severity": "Medium",
+          "reason": "CORS policy needs plugin configuration values. Required evidence: cors origins, methods and credentials settings."
+        },
+        {
+          "service": "orders-api",
+          "control_id": "EXP-03",
+          "title": "Data Classification Labels",
+          "outcome": "not_evaluable",
+          "severity": "Low",
+          "reason": "Data classification needs service labels. Required evidence: data classification tags per service/route."
+        }
+      ]
+    },
+    "conflicts": 0,
+    "risk": {
+      "High": 1,
+      "Medium": 6
+    },
+    "plan_actions": 0,
+    "change_proposals": 0,
+    "validation_passed": true,
+    "approval": "nothing_to_approve",
+    "budgets": {
+      "max_llm_calls": 20,
+      "llm_calls_used": 3,
+      "max_rounds": 1,
+      "max_tool_calls": 60,
+      "tool_calls_used": 9,
+      "max_duration_s": 180
+    },
+    "objective": "Full API security assessment",
+    "depth": "quick",
+    "plan_rationale": [
+      "no specific focus detected; running full coverage"
+    ],
+    "tiers": {
+      "confirmed": 0,
+      "suspected": 15,
+      "informational": 0,
+      "unverified": 1
+    },
+    "stopping": {
+      "decision": "risk",
+      "rounds_used": 1,
+      "reasons": [
+        "max_rounds reached; stopping investigation"
+      ]
+    },
+    "agents": {
+      "supervisor": {
+        "status": "ok",
+        "ms": 0.0,
+        "model": null,
+        "retries": 0,
+        "error": null
+      },
+      "discovery": {
+        "status": "degraded",
+        "ms": 6367.5,
+        "model": null,
+        "retries": 0,
+        "error": "No policy evidence retrieved; findings will be quarantined."
+      },
+      "dispatch": {
+        "status": "ok",
+        "ms": 2.2,
+        "model": null,
+        "retries": 0,
+        "error": null
+      },
+      "compliance": {
+        "status": "ok",
+        "ms": 2.1,
+        "model": null,
+        "retries": 0,
+        "error": null
+      },
+      "security_analysis": {
+        "status": "ok",
+        "ms": 19374.8,
+        "model": "muse-spark-1.3",
+        "retries": 0,
+        "error": null
+      },
+      "threat_model": {
+        "status": "ok",
+        "ms": 21854.9,
+        "model": "muse-spark-1.3",
+        "retries": 0,
+        "error": null
+      },
+      "aggregate": {
+        "status": "degraded",
+        "ms": 1.0,
+        "model": null,
+        "retries": 0,
+        "error": "1 finding(s) quarantined for missing evidence."
+      },
+      "evaluate": {
+        "status": "ok",
+        "ms": 0.8,
+        "model": null,
+        "retries": 0,
+        "error": null
+      },
+      "risk": {
+        "status": "degraded",
+        "ms": 11439.0,
+        "model": "muse-spark-1.3",
+        "retries": 0,
+        "error": "Risk explanation unavailable: Tool 'llm_risk_explain' failed: Model returned an empty risk explanation."
+      },
+      "remediation": {
+        "status": "ok",
+        "ms": 10.9,
+        "model": null,
+        "retries": 0,
+        "error": null
+      },
+      "validation": {
+        "status": "ok",
+        "ms": 1.0,
+        "model": null,
+        "retries": 0,
+        "error": null
+      },
+      "governance": {
+        "status": "ok",
+        "ms": 0.0,
+        "model": null,
+        "retries": 0,
+        "error": null
+      }
+    }
+  },
+  "trace": [
+    {
+      "at": "2026-11-03T02:39:17.492279+00:00",
+      "agent": "supervisor",
+      "event": "assessment_planned",
+      "detail": {
+        "assessment_id": "asm-f5807494f40b"
+      }
+    },
+    {
+      "at": "2026-11-03T02:39:23.861004+00:00",
+      "agent": "discovery",
+      "event": "agent_degraded",
+      "detail": {
+        "retries": 0,
+        "ms": 6367.5,
+        "error": "No policy evidence retrieved; findings will be quarantined."
+      }
+    },
+    {
+      "at": "2026-11-03T02:39:23.865400+00:00",
+      "agent": "dispatch",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 2.2,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-03T02:39:23.869433+00:00",
+      "agent": "compliance",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 2.1,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-03T02:39:43.243052+00:00",
+      "agent": "security_analysis",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 19374.8,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-03T02:39:45.723377+00:00",
+      "agent": "threat_model",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 21854.9,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-03T02:39:45.726720+00:00",
+      "agent": "aggregate",
+      "event": "agent_degraded",
+      "detail": {
+        "retries": 0,
+        "ms": 1.0,
+        "error": "1 finding(s) quarantined for missing evidence."
+      }
+    },
+    {
+      "at": "2026-11-03T02:39:45.728777+00:00",
+      "agent": "evaluate",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 0.8,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-03T02:39:57.169556+00:00",
+      "agent": "risk",
+      "event": "agent_degraded",
+      "detail": {
+        "retries": 0,
+        "ms": 11439.0,
+        "error": "Risk explanation unavailable: Tool 'llm_risk_explain' failed: Model returned an empty risk explanation."
+      }
+    },
+    {
+      "at": "2026-11-03T02:39:57.183522+00:00",
+      "agent": "remediation",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 10.9,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-03T02:39:57.186141+00:00",
+      "agent": "validation",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 1.0,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-03T02:39:57.187101+00:00",
+      "agent": "governance",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 0.0,
+        "error": null
+      }
+    }
+  ]
+}

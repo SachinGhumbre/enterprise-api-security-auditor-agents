@@ -1,0 +1,224 @@
+{
+  "summary": {
+    "assessment_id": "asm-4758c90639fd",
+    "run_id": "run-a0d2dd63",
+    "status": "complete",
+    "degraded": true,
+    "degraded_reasons": [
+      "risk failed: TypeError: '<' not supported between instances of 'str' and 'NoneType'"
+    ],
+    "selected_standards": [
+      "OWASP API Top 10"
+    ],
+    "kong_source": "kong_admin_api",
+    "kong_live": true,
+    "kong_stale": false,
+    "kong_snapshot_at": "2026-11-02T18:32:59.031948+00:00",
+    "services": 8,
+    "findings": 12,
+    "recovered": 0,
+    "quarantined": 0,
+    "policy_findings": 0,
+    "coverage": {},
+    "conflicts": 0,
+    "risk": {},
+    "plan_actions": 8,
+    "change_proposals": 1,
+    "validation_passed": true,
+    "approval": "approve",
+    "budgets": {
+      "max_llm_calls": 60,
+      "llm_calls_used": 11,
+      "max_rounds": 3,
+      "max_tool_calls": 200,
+      "tool_calls_used": 34,
+      "max_duration_s": 600
+    },
+    "objective": "Assess kong-test api",
+    "depth": "standard",
+    "plan_rationale": [
+      "objective mentions 'assess' -> investigation focus",
+      "selected [security_analysis] for focus [investigation]"
+    ],
+    "tiers": {},
+    "stopping": {
+      "decision": "risk",
+      "rounds_used": 1,
+      "reasons": [
+        "no gaps; evidence sufficient"
+      ]
+    },
+    "agents": {
+      "supervisor": {
+        "status": "ok",
+        "ms": 0.0,
+        "model": null,
+        "retries": 0,
+        "error": null
+      },
+      "discovery": {
+        "status": "ok",
+        "ms": 12817.0,
+        "model": null,
+        "retries": 0,
+        "error": null
+      },
+      "dispatch": {
+        "status": "ok",
+        "ms": 1.2,
+        "model": null,
+        "retries": 0,
+        "error": null
+      },
+      "security_analysis": {
+        "status": "ok",
+        "ms": 119434.4,
+        "model": "muse-spark-1.3",
+        "retries": 0,
+        "error": null
+      },
+      "aggregate": {
+        "status": "ok",
+        "ms": 1.7,
+        "model": null,
+        "retries": 0,
+        "error": null
+      },
+      "evaluate": {
+        "status": "ok",
+        "ms": 0.9,
+        "model": null,
+        "retries": 0,
+        "error": null
+      },
+      "risk": {
+        "status": "failed",
+        "ms": 1.4,
+        "model": null,
+        "retries": 1,
+        "error": "TypeError: '<' not supported between instances of 'str' and 'NoneType'"
+      },
+      "remediation": {
+        "status": "ok",
+        "ms": 26377.9,
+        "model": "muse-spark-1.3",
+        "retries": 0,
+        "error": null
+      },
+      "validation": {
+        "status": "ok",
+        "ms": 1.1,
+        "model": null,
+        "retries": 0,
+        "error": null
+      },
+      "governance": {
+        "status": "ok",
+        "ms": 1.3,
+        "model": null,
+        "retries": 0,
+        "error": null
+      }
+    }
+  },
+  "trace": [
+    {
+      "at": "2026-11-02T18:32:55.998913+00:00",
+      "agent": "supervisor",
+      "event": "assessment_planned",
+      "detail": {
+        "assessment_id": "asm-4758c90639fd"
+      }
+    },
+    {
+      "at": "2026-11-02T18:33:08.816649+00:00",
+      "agent": "discovery",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 12817.0,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-02T18:33:08.818968+00:00",
+      "agent": "dispatch",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 1.2,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-02T18:35:08.254450+00:00",
+      "agent": "security_analysis",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 119434.4,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-02T18:35:08.257244+00:00",
+      "agent": "aggregate",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 1.7,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-02T18:35:08.259286+00:00",
+      "agent": "evaluate",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 0.9,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-02T18:35:08.261785+00:00",
+      "agent": "risk",
+      "event": "agent_failed",
+      "detail": {
+        "retries": 1,
+        "ms": 1.4,
+        "error": "TypeError: '<' not supported between instances of 'str' and 'NoneType'"
+      }
+    },
+    {
+      "at": "2026-11-02T18:35:34.640416+00:00",
+      "agent": "remediation",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 26377.9,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-02T18:35:34.642588+00:00",
+      "agent": "validation",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 1.1,
+        "error": null
+      }
+    },
+    {
+      "at": "2026-11-02T18:35:57.994328+00:00",
+      "agent": "governance",
+      "event": "agent_ok",
+      "detail": {
+        "retries": 0,
+        "ms": 1.3,
+        "error": null
+      }
+    }
+  ]
+}

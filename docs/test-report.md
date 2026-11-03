@@ -1,15 +1,15 @@
 # Test & Evaluation Report
 
-Measured on this machine, Python 3.14 + Node 18+, immediately before the
+Measured on this machine, immediately before the
 hackathon. Sandbox limits are stated, not hidden.
 
 ## Automated suites
 
 | Suite | Result | Notes |
 |---|---|---|
-| Backend (`pytest backend/tests`) | **296 passed, 0 failed** | ~11s. Covers all 9 agents, router, policy, threats, risks, changes, Kong adapter/inventory, RAG, auth, validation, audit log |
-| Frontend (`react-scripts test`) | **4 passed** | API-key header, signed-out mode, 401 hook, storage roundtrip |
-| Frontend build (`npm run build`, CI) | **Compiles** | ESLint-clean, 83 kB gzipped JS |
+| Backend (`pytest backend/tests`) | **378 passed, 0 failed** | Covers all 9 agents, router, policy, threats, risks, changes, Kong adapter/inventory, RAG, auth, validation, audit log, assistant chat/API, and the `start_all.py` launcher |
+| Frontend (`react-scripts test`) | **26 passed, 7 suites** | App shell + widget, login, assistant chat, chat cards, API client, UI primitives, env guards |
+| Frontend build (`npm run build`, CI) | **Compiles** | ESLint-clean production bundle (verified) |
 | Flask construct smoke | **21 + 9 routes** | Both apps build their route maps |
 
 ## Retrieval eval (offline, deterministic)
@@ -43,7 +43,7 @@ corpus files:
 
 ## Not verified here
 
-- Real port binds (sandbox denies listening sockets), live Redis Stack,
-  live Kong Admin API, live Meta inference, and the `meta` vs `azure`
+- Live Redis Stack, live Kong Admin API, live Meta inference, and the
+  `meta` vs `azure`
   eval comparison. Verify these on the demo machine with
   `docs/setup.md`, then re-run the two eval commands above.

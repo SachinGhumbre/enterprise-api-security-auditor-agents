@@ -19,6 +19,8 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from dotenv import load_dotenv
 import redis
+from redis.backoff import NoBackoff
+from redis.retry import Retry
 from redis.commands.search.field import TagField, TextField, VectorField
 from redis.commands.search.index_definition import IndexDefinition, IndexType
 
@@ -46,7 +48,18 @@ KEY_PREFIX = "embedding:"
 # valid UTF-8; with decode_responses=True redis-py tries to decode it on read and
 # raises "'utf-8' codec can't decode byte ...". Fields are decoded individually
 # below instead - the same approach as backend/common/vector_store.py.
-redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=False)
+# Bounded attempts: the dashboard abandons the index_info probe after 30s, and
+# redis-py's defaults (10 retries, TimeoutError included) let ONE stalled
+# command burn ~55s. One transparent retry covers a stale pooled connection;
+# anything longer fails fast with a 500 the card can show and retry.
+redis_client = redis.Redis(
+    host=REDIS_HOST,
+    port=REDIS_PORT,
+    decode_responses=False,
+    socket_connect_timeout=3,
+    socket_timeout=3,
+    retry=Retry(NoBackoff(), 1),
+)
 
 # Field that holds packed float32 vectors; never decoded as text.
 VECTOR_FIELD = b"vector"
@@ -182,18 +195,27 @@ def index_info():
     """Report index status and the Redis connection actually in use.
 
     Optional query param: ?index_name=<name> (defaults to INDEX_NAME).
+
+    Deliberately a single FT.INFO: this backs a dashboard card with a 30s
+    probe budget, so it must not sweep the keyspace (key inventory lives in
+    /redis/all_embeddings).
     """
     index_name, error = resolve_index_name(request.args.get("index_name"))
     if error:
         return jsonify({"error": error}), 400
 
     try:
-        info = redis_client.ft(index_name).info() if index_exists(index_name) else None
+        try:
+            info = redis_client.ft(index_name).info()
+        except Exception:
+            # Unknown index (or a failed probe): report it as missing rather
+            # than failing the dashboard card. Same outcome as the old
+            # index_exists() pre-check, with one round trip instead of two.
+            info = None
         return jsonify({
             "index_name": index_name,
             "exists": info is not None,
             "num_docs": _info_value(info, "num_docs", 0),
-            "stored_keys": sum(1 for _ in iter_embedding_keys()),
             "redis_host": REDIS_HOST,
             "redis_port": REDIS_PORT,
             "env_file": ENV_PATH if os.path.exists(ENV_PATH) else None
@@ -316,4 +338,6 @@ def delete_all_embeddings():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5002)
+    # Threaded: the dashboard (StrictMode) fires concurrent probes; they must
+    # not queue behind one stalled request on a single-threaded server.
+    app.run(debug=True, port=5002, threaded=True)

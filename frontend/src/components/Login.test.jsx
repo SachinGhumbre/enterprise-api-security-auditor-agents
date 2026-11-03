@@ -51,6 +51,42 @@ describe('Login', () => {
     expect(onLogin).not.toHaveBeenCalled();
   });
 
+  test('password with surrounding whitespace in .env still signs in', async () => {
+    const saved = process.env.REACT_APP_ADMIN_PASSWORD;
+    process.env.REACT_APP_ADMIN_PASSWORD = '  Admin@123  ';
+    try {
+      global.fetch.mockResolvedValueOnce({ ok: true, status: 200 });
+      const onLogin = jest.fn();
+      render(<Login onLogin={onLogin} />);
+      fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'admin' } });
+      fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'Admin@123' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+      await waitFor(() => expect(onLogin).toHaveBeenCalledWith('admin'));
+    } finally {
+      process.env.REACT_APP_ADMIN_PASSWORD = saved;
+    }
+  });
+
+  test('missing passwords show a restart hint on the page', () => {
+    const saved = {
+      admin: process.env.REACT_APP_ADMIN_PASSWORD,
+      operator: process.env.REACT_APP_OPERATOR_PASSWORD,
+      viewer: process.env.REACT_APP_VIEWER_PASSWORD,
+    };
+    delete process.env.REACT_APP_ADMIN_PASSWORD;
+    delete process.env.REACT_APP_OPERATOR_PASSWORD;
+    delete process.env.REACT_APP_VIEWER_PASSWORD;
+    try {
+      render(<Login onLogin={() => {}} />);
+      expect(screen.getByText(/demo passwords not loaded/i)).toBeInTheDocument();
+      expect(screen.getByText(/restart.*npm start/i)).toBeInTheDocument();
+    } finally {
+      process.env.REACT_APP_ADMIN_PASSWORD = saved.admin;
+      process.env.REACT_APP_OPERATOR_PASSWORD = saved.operator;
+      process.env.REACT_APP_VIEWER_PASSWORD = saved.viewer;
+    }
+  });
+
   test('401 with no role key explains the misconfiguration', async () => {
     global.fetch.mockResolvedValueOnce({ ok: false, status: 401 });
     render(<Login onLogin={() => {}} />);

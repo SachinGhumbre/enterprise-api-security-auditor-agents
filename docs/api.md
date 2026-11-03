@@ -52,6 +52,24 @@ errors are `{"error": "..."}` with HTTP status.
 | `GET /get_all_embeddings` | viewer | Paginated chunk dump |
 | `DELETE /embeddings`, `DELETE /all_embeddings` | admin | Wipe vectors + manifest (aliases) |
 
+## Assistant (chat copilot)
+
+Same `:5000` base. Conversations are isolated per API key (cross-owner
+reads return 404). Read intents need viewer; `start_audit` / `remediate`
+need operator. The allowlist has no approve, execute or persist tool, so
+chat can never change anything — it reads, explains and drafts.
+
+| Method & path | Role | Purpose |
+|---|---|---|
+| `GET /assistant/prompts` | viewer | Suggested starter prompts |
+| `POST /assistant/conversations` | viewer | Create chat (201). Body: `title?`, `assessment_id?` |
+| `GET /assistant/conversations` | viewer | Own history, newest first |
+| `GET /assistant/conversations/<id>` | viewer | Thread + supervised tasks (`?messages=&limit=`) |
+| `DELETE /assistant/conversations/<id>` | viewer | Delete own thread |
+| `POST /assistant/conversations/<id>/messages` | viewer | Sync turn. Body: `message`, `assessment_id?` |
+| `POST /assistant/conversations/<id>/messages/stream` | viewer | SSE turn: one `header`, `delta` chunks, then `done` |
+| `GET /assistant/tasks/<task_id>` | viewer | Supervised task status |
+
 ## Health
 
 `GET /health` on each service is open (load-balancer friendly) and returns

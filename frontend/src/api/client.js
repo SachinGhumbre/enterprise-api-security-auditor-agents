@@ -13,7 +13,10 @@
  * tab); every request below attaches it as X-API-Key when present.
  */
 
-const env = (typeof process !== 'undefined' && process.env) || {};
+// Guard on `process.env`, never on bare `process`: webpack's DefinePlugin
+// inlines `process.env` as an object literal, but `process` itself does not
+// exist in the browser bundle (see readEnv in components/Login.jsx).
+const env = (typeof process.env !== 'undefined' && process.env) || {};
 
 export const AGENTS_URL = env.REACT_APP_AGENTS_URL || 'http://localhost:5000';
 export const KNOWLEDGE_URL = env.REACT_APP_KNOWLEDGE_URL || 'http://localhost:5001';
@@ -239,6 +242,137 @@ export const assess = {
       method: 'POST',
       body: { to_state: toState, actor, note },
     }),
+};
+
+/* --- AI Security Assistant ---------------------------------------------------- */
+
+const ASSISTANT = `${AGENTS_URL}/api/v1/ai-agents/assistant`;
+
+export const assistant = {
+  prompts: () => request(`${ASSISTANT}/prompts`, { timeout: 30000 }),
+
+  listConversations: (limit = 50) =>
+    request(`${ASSISTANT}/conversations?limit=${limit}`, { timeout: 30000 }),
+
+  createConversation: ({ title, assessmentId } = {}) =>
+    request(`${ASSISTANT}/conversations`, {
+      method: 'POST',
+      body: {
+        ...(title ? { title } : {}),
+        ...(assessmentId ? { assessment_id: assessmentId } : {}),
+      },
+      timeout: 30000,
+    }),
+
+  getConversation: (id, { messages = true, limit = 100 } = {}) =>
+    request(
+      `${ASSISTANT}/conversations/${encodeURIComponent(id)}?messages=${messages}&limit=${limit}`,
+      { timeout: 30000 }
+    ),
+
+  deleteConversation: (id) =>
+    request(`${ASSISTANT}/conversations/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      timeout: 30000,
+    }),
+
+  sendMessage: (id, message, assessmentId) =>
+    request(`${ASSISTANT}/conversations/${encodeURIComponent(id)}/messages`, {
+      method: 'POST',
+      body: {
+        message,
+        ...(assessmentId ? { assessment_id: assessmentId } : {}),
+      },
+    }),
+
+  task: (taskId) =>
+    request(`${ASSISTANT}/tasks/${encodeURIComponent(taskId)}`, { timeout: 30000 }),
+
+  /**
+   * Streaming chat turn. Calls onHeader once (intent, cards, task), onDelta
+   * per text chunk, and resolves with the done payload. Same auth and
+   * error semantics as request().
+   */
+  sendMessageStream: async (id, { message, assessmentId } = {}, { onHeader, onDelta } = {}) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      const apiKey = getApiKey();
+      if (apiKey) headers['X-API-Key'] = apiKey;
+      const response = await fetch(
+        `${ASSISTANT}/conversations/${encodeURIComponent(id)}/messages/stream`,
+        {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            message,
+            ...(assessmentId ? { assessment_id: assessmentId } : {}),
+          }),
+          signal: controller.signal,
+        }
+      );
+      if (!response.ok) {
+        const text = await response.text();
+        let payload = null;
+        try {
+          payload = text ? JSON.parse(text) : null;
+        } catch (err) {
+          payload = { raw: text };
+        }
+        const detail =
+          (payload && (payload.error || payload.message)) ||
+          `Request failed (${response.status})`;
+        const error = new ApiError(detail, response.status, payload);
+        if (response.status === 401 && typeof onUnauthorized === 'function') {
+          try {
+            onUnauthorized(error);
+          } catch (hookErr) {
+            // Never let the hook mask the original failure.
+          }
+        }
+        throw error;
+      }
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let done = null;
+      for (;;) {
+        const { value, done: finished } = await reader.read();
+        if (finished) break;
+        buffer += decoder.decode(value, { stream: true });
+        const frames = buffer.split('\n\n');
+        buffer = frames.pop();
+        for (const frame of frames) {
+          for (const line of frame.split('\n')) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith('data:')) continue;
+            let event = null;
+            try {
+              event = JSON.parse(trimmed.slice(5).trim());
+            } catch (err) {
+              continue;
+            }
+            if (event.delta && typeof onDelta === 'function') onDelta(event.delta);
+            else if (event.type === 'header' && typeof onHeader === 'function') onHeader(event);
+            else if (event.type === 'done') done = event;
+            else if (event.error) throw new ApiError(event.error, 0, event);
+          }
+        }
+      }
+      return done;
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        throw new ApiError(
+          `Request timed out after ${Math.round(DEFAULT_TIMEOUT_MS / 1000)}s`, 0, null
+        );
+      }
+      if (err instanceof ApiError) throw err;
+      throw new ApiError(`Cannot reach ${new URL(ASSISTANT).host}. Is the service running?`, 0, null);
+    } finally {
+      clearTimeout(timer);
+    }
+  },
 };
 
 /* --- Model usage & evaluation ----------------------------------------------- */

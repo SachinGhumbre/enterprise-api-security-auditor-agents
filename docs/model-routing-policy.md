@@ -50,6 +50,29 @@ default: an empty model id raises instead of guessing.
 - Reason: board summaries need faithful abstraction without new claims.
 - Used by: executive-summary endpoint (on demand, completed runs only).
 
+### assistant_intent
+
+- Complexity: medium. Provider: Meta, model `META_MODEL`.
+- Reason: ambiguous chat messages need instruction-following
+  classification into a strict intent JSON schema.
+- Used by: assistant graph `interpret` step (only for ambiguous input;
+  clear intents classify deterministically).
+
+### assistant_qa
+
+- Complexity: high. Provider: Meta, model `META_MODEL`.
+- Reason: security explanations must reason over retrieved policy
+  evidence and inventory facts without inventing claims.
+- Used by: assistant knowledge/investigation answers.
+
+### assistant_synthesis
+
+- Complexity: high. Provider: Meta, model `META_MODEL`.
+- Reason: cross-agent results need faithful synthesis with evidence
+  citations and no invented execution claims.
+- Used by: assistant graph `synthesize` step; deterministic rendering
+  when the model is unavailable.
+
 ## Fallback rules
 
 - Order comes from `LLM_FALLBACK_ORDER` (`none` by default; e.g. `azure`).

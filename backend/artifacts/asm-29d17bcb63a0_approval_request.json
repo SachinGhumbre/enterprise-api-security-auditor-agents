@@ -1,0 +1,25 @@
+{
+  "assessment_id": "asm-29d17bcb63a0",
+  "actions": 8,
+  "by_severity": {
+    "Medium": 5,
+    "Critical": 3
+  },
+  "risk": {},
+  "validation_passed": true,
+  "change_proposals": 1,
+  "excluded": [],
+  "degraded_reasons": [
+    "risk failed: TypeError: '<' not supported between instances of 'str' and 'NoneType'"
+  ],
+  "objective": "Full API security assessment",
+  "tiers": {},
+  "coverage_totals": {
+    "total": 216,
+    "satisfied": 20,
+    "partial": 9,
+    "unsatisfied": 99,
+    "not_evaluable": 88
+  },
+  "note": "Approval authorises export of this plan. Nothing is applied to Kong by this workflow."
+}

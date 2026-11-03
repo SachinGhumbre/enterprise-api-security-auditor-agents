@@ -41,6 +41,9 @@ THREAT_MODELLING = "threat_modelling"
 RISK_REASONING = "risk_reasoning"
 REMEDIATION_PLANNING = "remediation_planning"
 EXECUTIVE_EXPLANATION = "executive_explanation"
+ASSISTANT_INTENT = "assistant_intent"
+ASSISTANT_QA = "assistant_qa"
+ASSISTANT_SYNTHESIS = "assistant_synthesis"
 
 TASK_POLICY = {
     SECURITY_INVESTIGATION: {
@@ -78,6 +81,24 @@ TASK_POLICY = {
         "provider": "meta",
         "reason": ("Board-ready summaries need faithful abstraction over "
                    "verified findings without inventing new claims."),
+    },
+    ASSISTANT_INTENT: {
+        "complexity": "medium",
+        "provider": "meta",
+        "reason": ("Ambiguous chat messages need instruction-following "
+                   "classification into a strict intent JSON schema."),
+    },
+    ASSISTANT_QA: {
+        "complexity": "high",
+        "provider": "meta",
+        "reason": ("Security explanations must reason over retrieved policy "
+                   "evidence and inventory facts without inventing claims."),
+    },
+    ASSISTANT_SYNTHESIS: {
+        "complexity": "high",
+        "provider": "meta",
+        "reason": ("Cross-agent results need faithful synthesis with "
+                   "evidence citations and no invented execution claims."),
     },
 }
 

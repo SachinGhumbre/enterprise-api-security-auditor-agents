@@ -5,7 +5,74 @@
     "service_plugins": [
       "ai-mcp-proxy"
     ],
-    "route_count": 5
+    "route_count": 5,
+    "service_routes": [
+      {
+        "id": "35d1ac91-b313-5557-818a-f4e38c904136",
+        "name": "orders-api_listorders",
+        "paths": [
+          "~/orders$"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "ai-mcp-proxy"
+        ]
+      },
+      {
+        "id": "5bd8d943-95bb-5257-ae80-1cb044c1e1c6",
+        "name": "orders-api_getorder",
+        "paths": [
+          "~/orders/(?<orderid>[^#?/]+)$"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "ai-mcp-proxy"
+        ]
+      },
+      {
+        "id": "670fe309-eb29-57c1-a1f3-34696774a9a9",
+        "name": "orders-api_createorder",
+        "paths": [
+          "~/orders$"
+        ],
+        "methods": [
+          "POST"
+        ],
+        "plugin_names": [
+          "ai-mcp-proxy"
+        ]
+      },
+      {
+        "id": "94c46ea8-8c5c-57d9-8646-3b6b8a83a5dc",
+        "name": "orders-api_replaceorder",
+        "paths": [
+          "~/orders/(?<orderid>[^#?/]+)$"
+        ],
+        "methods": [
+          "PUT"
+        ],
+        "plugin_names": [
+          "ai-mcp-proxy"
+        ]
+      },
+      {
+        "id": "d9ac0c1b-9b03-52fd-8691-f331d87e3a1d",
+        "name": "orders-api_deleteorder",
+        "paths": [
+          "~/orders/(?<orderid>[^#?/]+)$"
+        ],
+        "methods": [
+          "DELETE"
+        ],
+        "plugin_names": [
+          "ai-mcp-proxy"
+        ]
+      }
+    ]
   },
   {
     "service_name": "AM_FCA_SF",
@@ -16,13 +83,100 @@
       "rate-limiting",
       "request-transformer"
     ],
-    "route_count": 5
+    "route_count": 5,
+    "service_routes": [
+      {
+        "id": "44f93939-7ece-4bbd-b98e-fae370b0c298",
+        "name": "AM_FCA_SF_v1_am_fca_sf_query_GET",
+        "paths": [
+          "/v1/am_fca_sf/query"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "ip-restriction",
+          "openid-connect"
+        ]
+      },
+      {
+        "id": "4cb7eaf1-1c93-46e0-b7ee-8c20e593e146",
+        "name": "AM_FCA_SF_v1_am_fca_sf_accounts_accountId_GET",
+        "paths": [
+          "~/v1/am_fca_sf/accounts/(?<accountId>[^/]+)"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "ip-restriction",
+          "openid-connect"
+        ]
+      },
+      {
+        "id": "b63f6093-eb44-4e3c-8690-c4a121e468a7",
+        "name": "AM_FCA_SF_v1_am_fca_sf_accounts_POST",
+        "paths": [
+          "/v1/am_fca_sf/accounts"
+        ],
+        "methods": [
+          "POST"
+        ],
+        "plugin_names": [
+          "ip-restriction",
+          "openid-connect"
+        ]
+      },
+      {
+        "id": "e62b4bdc-61ca-4d89-85a3-352414695bd9",
+        "name": "AM_FCA_SF_v1_am_fca_sf_accounts_accountId_PATCH",
+        "paths": [
+          "~/v1/am_fca_sf/accounts/(?<accountId>[^/]+)"
+        ],
+        "methods": [
+          "PATCH"
+        ],
+        "plugin_names": [
+          "ip-restriction",
+          "openid-connect",
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "f6b85462-600f-478b-8d28-e87a9ac5ee00",
+        "name": "AM_FCA_SF_v1_am_fca_sf_accounts_accountId_DELETE",
+        "paths": [
+          "~/v1/am_fca_sf/accounts/(?<accountId>[^/]+)"
+        ],
+        "methods": [
+          "DELETE"
+        ],
+        "plugin_names": [
+          "ip-restriction",
+          "openid-connect"
+        ]
+      }
+    ]
   },
   {
     "service_name": "Healthcheck",
     "service_id": "72195e31-b0eb-49b5-80ae-48f9eba32292",
     "service_plugins": [],
-    "route_count": 1
+    "route_count": 1,
+    "service_routes": [
+      {
+        "id": "cec78237-23f9-44e0-99e7-20ec2c5dc80e",
+        "name": "Healthcheck",
+        "paths": [
+          "/test"
+        ],
+        "methods": [
+          "GET",
+          "OPTIONS"
+        ],
+        "plugin_names": []
+      }
+    ]
   },
   {
     "service_name": "users-api",
@@ -30,7 +184,87 @@
     "service_plugins": [
       "ai-mcp-proxy"
     ],
-    "route_count": 6
+    "route_count": 6,
+    "service_routes": [
+      {
+        "id": "37fe9599-9f08-5abf-a5d1-412ac7474744",
+        "name": "users-api_listusers",
+        "paths": [
+          "~/users$"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "ai-mcp-proxy"
+        ]
+      },
+      {
+        "id": "40e302d8-dfc3-59f2-8840-cbc24c439e53",
+        "name": "users-api_getuser",
+        "paths": [
+          "~/users/(?<userid>[^#?/]+)$"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "ai-mcp-proxy"
+        ]
+      },
+      {
+        "id": "42ea96a7-d076-5336-88aa-65b391dd059c",
+        "name": "users-api_createuser",
+        "paths": [
+          "~/users$"
+        ],
+        "methods": [
+          "POST"
+        ],
+        "plugin_names": [
+          "ai-mcp-proxy"
+        ]
+      },
+      {
+        "id": "da208119-499c-58d6-b903-2cca9a53b68c",
+        "name": "users-api_replaceuser",
+        "paths": [
+          "~/users/(?<userid>[^#?/]+)$"
+        ],
+        "methods": [
+          "PUT"
+        ],
+        "plugin_names": [
+          "ai-mcp-proxy"
+        ]
+      },
+      {
+        "id": "f3104394-3089-5b1d-acd0-904144446210",
+        "name": "users-api_listordersforuser",
+        "paths": [
+          "~/users/(?<userid>[^#?/]+)/orders$"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "ai-mcp-proxy"
+        ]
+      },
+      {
+        "id": "f79b1cf2-1639-5e9b-ae24-8a57dd5510d7",
+        "name": "users-api_deleteuser",
+        "paths": [
+          "~/users/(?<userid>[^#?/]+)$"
+        ],
+        "methods": [
+          "DELETE"
+        ],
+        "plugin_names": [
+          "ai-mcp-proxy"
+        ]
+      }
+    ]
   },
   {
     "service_name": "MyMetaAIGatewayService",
@@ -40,13 +274,48 @@
       "ai-proxy-advanced",
       "key-auth"
     ],
-    "route_count": 1
+    "route_count": 1,
+    "service_routes": [
+      {
+        "id": "0a5a9581-b650-41d8-b794-ba54f89e63f9",
+        "name": "CognizantAIGatewayRoute",
+        "paths": [
+          "/llm"
+        ],
+        "methods": [
+          "GET",
+          "PUT",
+          "POST",
+          "PATCH"
+        ],
+        "plugin_names": [
+          "acl",
+          "key-auth"
+        ]
+      }
+    ]
   },
   {
     "service_name": "new-service-20260525181340158",
     "service_id": "9d454460-62ec-4f0a-b04e-9c868de4d2b8",
     "service_plugins": [],
-    "route_count": 1
+    "route_count": 1,
+    "service_routes": [
+      {
+        "id": "7e31de18-6b9e-492c-ad3b-1f4ae9f55082",
+        "name": "new-route-20260525181410703",
+        "paths": [
+          "/newroute"
+        ],
+        "methods": [
+          "GET",
+          "PUT",
+          "POST",
+          "OPTIONS"
+        ],
+        "plugin_names": []
+      }
+    ]
   },
   {
     "service_name": "kongtest-api",
@@ -58,7 +327,59 @@
       "rate-limiting",
       "request-transformer"
     ],
-    "route_count": 3
+    "route_count": 3,
+    "service_routes": [
+      {
+        "id": "4e976c36-57c6-44bf-89d4-11e641095e84",
+        "name": "kongtest-basicauth-get",
+        "paths": [
+          "/kongtest/basicAuth"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "basic-auth",
+          "ip-restriction",
+          "key-auth"
+        ]
+      },
+      {
+        "id": "c480bd24-67b2-423d-b6d0-3fdaa3f23003",
+        "name": "kongtest-apikey-all-delete-get-options-patch-post-put",
+        "paths": [
+          "/kongtest/apikey"
+        ],
+        "methods": [
+          "DELETE",
+          "GET",
+          "OPTIONS",
+          "PATCH",
+          "POST",
+          "PUT"
+        ],
+        "plugin_names": [
+          "basic-auth",
+          "ip-restriction",
+          "key-auth"
+        ]
+      },
+      {
+        "id": "eb91e57a-18fe-4e22-9de1-f2f4a3ca6ac3",
+        "name": "kongtest-accesscontrol-get",
+        "paths": [
+          "/kongtest/accessControl"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "basic-auth",
+          "ip-restriction",
+          "key-auth"
+        ]
+      }
+    ]
   },
   {
     "service_name": "swagger-petstore-api",
@@ -68,6 +389,209 @@
       "rate-limiting",
       "request-transformer"
     ],
-    "route_count": 15
+    "route_count": 15,
+    "service_routes": [
+      {
+        "id": "0f4c2929-e599-4839-a66a-b91706ae4279",
+        "name": "swagger-petstore-createwitharray-post",
+        "paths": [
+          "/user/createWithArray"
+        ],
+        "methods": [
+          "POST"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "105de242-cbc3-4b1b-ba0b-f9fa2ac67c6d",
+        "name": "swagger-petstore-order-post",
+        "paths": [
+          "/store/order"
+        ],
+        "methods": [
+          "POST"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "1760f86e-396d-477c-aefa-176935e231e4",
+        "name": "swagger-petstore-user-delete-get-put",
+        "paths": [
+          "~/user/[^/]+"
+        ],
+        "methods": [
+          "DELETE",
+          "GET",
+          "PUT"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "45d8cacd-72e0-4d4d-8d97-855ef412297c",
+        "name": "swagger-petstore-findbystatus-get",
+        "paths": [
+          "/pet/findByStatus"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "72fd8343-ed08-4163-9555-e6d31f7345c9",
+        "name": "swagger-petstore-inventory-get",
+        "paths": [
+          "/store/inventory"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "a7ee9869-3340-4ac7-a874-3207c18e918b",
+        "name": "swagger-petstore-login-get",
+        "paths": [
+          "/user/login"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "a8871fe2-f130-4cc0-9631-5a23f6bb7c97",
+        "name": "swagger-petstore-user-post",
+        "paths": [
+          "/user"
+        ],
+        "methods": [
+          "POST"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "b7f06dc2-2d09-4210-8d43-e7a625e0b5c0",
+        "name": "swagger-petstore-pet-post-put",
+        "paths": [
+          "/pet"
+        ],
+        "methods": [
+          "POST",
+          "PUT"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "be97166b-983f-4086-93c1-78d60f7bd0c3",
+        "name": "swagger-petstore-logout-get",
+        "paths": [
+          "/user/logout"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "c809a623-14d1-4500-a0aa-605dee4d7e3b",
+        "name": "swagger-petstore-findbytags-get",
+        "paths": [
+          "/pet/findByTags"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "cac05bbd-6c8e-419f-aeb1-09fa38598c05",
+        "name": "swagger-petstore-uploadimage-post",
+        "paths": [
+          "~/pet/[^/]+/uploadImage"
+        ],
+        "methods": [
+          "POST"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "cfe705c6-16b0-4084-8da0-408211146884",
+        "name": "swagger-petstore-token-get",
+        "paths": [
+          "/token"
+        ],
+        "methods": [
+          "GET"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "d9512bf5-ee7a-4ffc-83b1-d80a366585df",
+        "name": "swagger-petstore-createwithlist-post",
+        "paths": [
+          "/user/createWithList"
+        ],
+        "methods": [
+          "POST"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "f220eda3-92b2-4704-82c7-b43fc7e1c767",
+        "name": "swagger-petstore-pet-delete-get-post",
+        "paths": [
+          "~/pet/[^/]+"
+        ],
+        "methods": [
+          "DELETE",
+          "GET",
+          "POST"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      },
+      {
+        "id": "f2fe7bde-c98a-4989-be53-3386160fa14e",
+        "name": "swagger-petstore-store-delete-get",
+        "paths": [
+          "~/store/order/[^/]+"
+        ],
+        "methods": [
+          "DELETE",
+          "GET"
+        ],
+        "plugin_names": [
+          "request-transformer"
+        ]
+      }
+    ]
   }
 ]

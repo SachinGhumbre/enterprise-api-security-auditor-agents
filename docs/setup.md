@@ -35,7 +35,20 @@ npm install
 cd ..
 ```
 
-## Run (one window per service, venv activated)
+## Run
+
+One command (repo root, venv activated) starts everything in order —
+Redis harness, knowledge API, agents API, then the dashboard — waiting
+for each Python service to answer its health endpoint first. Services
+already running are detected and skipped.
+
+```powershell
+.\backend\.venv\Scripts\Activate.ps1
+python start_all.py
+# Options: --skip-redis-test, --skip-frontend, --timeout 90
+```
+
+Or manually, one window per service:
 
 ```powershell
 python redis-test.py                    # :5002  Redis harness (optional)

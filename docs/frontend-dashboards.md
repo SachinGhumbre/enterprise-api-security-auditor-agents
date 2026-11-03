@@ -24,6 +24,11 @@ every number renders from a backend response or an explicit empty state.
 - **Model Analytics** — routing policy table, call log with latency /
   tokens / retries / fallbacks, aggregates, and one-click retrieval
   eval (fake or redis store).
+- **AI Assistant (floating)** — bottom-right chat widget on every page:
+  history toggle, new/delete, assessment context, suggested prompts,
+  streaming replies with an agent-running indicator, origin badges,
+  evidence citations and structured cards that navigate into Findings,
+  Investigation and the Remediation Centre (closing the widget).
 
 ## Backend enablers (all additive)
 
@@ -42,8 +47,9 @@ cd frontend && npm start   # http://localhost:3000
 ```
 
 Needs the agents API on :5000 (and :5001 for knowledge features).
-Sign in with an API key when the backends enforce auth, or leave the
-key empty in single-user mode.
+Sign in with a demo username and password (`admin` / `operator` /
+`viewer`, shown on the login page). Each account maps to that role's API
+key, verified against the backend before entering.
 
 ## Limits
 

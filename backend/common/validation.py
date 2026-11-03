@@ -26,6 +26,8 @@ SEARCH_TOP_K_MAX = 50
 DEPTHS = ("quick", "standard", "deep")
 RISK_LEVELS = ("Critical", "High", "Medium", "Low")
 PROMPT_TEXT_MAX = 200
+MAX_CHAT_MESSAGE_CHARS = 4000
+MAX_CONVERSATION_TITLE_CHARS = 120
 
 
 def coerce_text(value, field, max_len=MAX_NOTE_CHARS, required=False):
@@ -138,6 +140,23 @@ def safe_knowledge_dir(value, default):
     if not candidate or ".." in segments:
         raise ValueError("Invalid 'knowledge_dir'.")
     return candidate
+
+
+def coerce_chat_message(value, field="message",
+                        max_len=MAX_CHAT_MESSAGE_CHARS, required=True):
+    """Chat message text: required non-empty string with a length cap."""
+    if value is None:
+        if required:
+            raise ValueError(f"'{field}' is required.")
+        return ""
+    if isinstance(value, bool) or not isinstance(value, str):
+        raise ValueError(f"'{field}' must be a string.")
+    text = value.strip()
+    if required and not text:
+        raise ValueError(f"'{field}' must not be empty.")
+    if len(value) > max_len:
+        raise ValueError(f"'{field}' exceeds {max_len} characters.")
+    return text
 
 
 def sanitize_for_prompt(value, max_len=PROMPT_TEXT_MAX):

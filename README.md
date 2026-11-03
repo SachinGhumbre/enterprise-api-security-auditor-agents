@@ -21,11 +21,12 @@ against GDPR, HIPAA, PCI-DSS, ISO 27001, OWASP API Top 10, PSD2/SCA, NIST and SO
 11. [API catalog](#api-catalog)
 12. [Postman collection](#postman-collection)
 13. [Frontend](#frontend)
-14. [Tests](#tests)
-15. [Troubleshooting](#troubleshooting)
-16. [Documentation](#documentation)
-17. [Technology stack](#technology-stack)
-18. [Author](#author)
+14. [AI Assistant](#ai-assistant)
+15. [Tests](#tests)
+16. [Troubleshooting](#troubleshooting)
+17. [Documentation](#documentation)
+18. [Technology stack](#technology-stack)
+19. [Author](#author)
 
 ---
 
@@ -62,7 +63,7 @@ A supervisor-led team of nine LangGraph agents replaces the manual loop end
 to end (the original two single-agent paths are kept and still work):
 
 ```
-Ingest policies ONCE  →  Investigate ANYTIME  →  Approve  →  Remediate safely
+Ingest policies ONCE  →  Investigate ANYTIME  →  Approve  →  Remediate safely  →  Ask the copilot
 ```
 
 ### How it works
@@ -78,6 +79,10 @@ Ingest policies ONCE  →  Investigate ANYTIME  →  Approve  →  Remediate saf
 3. **Remediate safely.** Structured change proposals carry diffs, simulations and
    residual risk. Approved changes execute through an allowlisted adapter with
    post-change validation; everything lands in a hash-chained audit log.
+4. **Ask the copilot.** A floating AI Assistant on every dashboard page
+   answers security questions, explains findings with evidence, runs
+   supervised tasks and drafts fixes — approvals and execution stay
+   human-gated.
 
 ### What it replaces
 
@@ -123,7 +128,7 @@ This project runs on the **[Meta Model API](https://developer.meta.com/ai/resour
 
 | Model | Where it is used |
 |---|---|
-| **`muse-spark-1.3`** | The reasoning engine for **all six reasoning tasks** — investigation, evidence correlation, threat modelling, risk explanation, remediation planning and executive summaries — via one enforced routing table (`GET /llm/policy`). See [Why Muse Spark](docs/why-muse-spark.md) |
+| **`muse-spark-1.3`** | The reasoning engine for **all nine reasoning tasks** — six investigation tasks plus three assistant tasks (intent, Q&A, synthesis) — investigation, evidence correlation, threat modelling, risk explanation, remediation planning and executive summaries — via one enforced routing table (`GET /llm/policy`). See [Why Muse Spark](docs/why-muse-spark.md) |
 | **Muse Code** | Used as the coding agent while developing this project |
 | **Muse Spark Open** | Same lineage; the pipeline can target a self-hosted instance via `META_BASE_URL` |
 
@@ -209,11 +214,11 @@ flowchart TB
     USER["Security Auditor"]
 
     subgraph CLIENT["Client tier"]
-        PORTAL["Auditor Portal<br/>React 19 SPA · :3000"]
+        PORTAL["Auditor Portal<br/>React 19 SPA · :3000<br/>+ floating AI Assistant"]
     end
 
     subgraph SERVICES["Application tier · Flask"]
-        AGENTS["AI Agents API · :5000<br/>Audit Agent · Remediation Agent<br/>LangGraph orchestration"]
+        AGENTS["AI Agents API · :5000<br/>Supervisor team · Audit · Remediation<br/>LangGraph orchestration · AI Assistant"]
         RAG["Knowledge Service · :5001<br/>Corpus ingest · KNN retrieval"]
         HARNESS["Redis Harness · :5002<br/>Index diagnostics"]
     end
@@ -334,7 +339,7 @@ title: Runtime topology — services, ports, and dependencies
 ---
 flowchart TB
     subgraph UI["React Dashboard :3000"]
-        D["Overview / Investigation / Findings /<br/>Remediation Centre / Model Analytics /<br/>Knowledge / Audit / Remediation"]
+        D["Overview / Investigation / Findings /<br/>Remediation Centre / Model Analytics /<br/>Knowledge / Audit / Remediation /<br/>AI Assistant (floating chat)"]
     end
 
     subgraph SVC["Backend services"]
@@ -419,6 +424,7 @@ enterprise-api-security-auditor-agents/
 ├── enterprise-api-security-auditor-agents.postman_collection.json   # 24 requests, 6 folders
 ├── README.md
 ├── redis-test.py                        # :5002  standalone Redis harness
+├── start_all.py                         # one-command launcher: harness → knowledge → agents → dashboard
 ├── backend/
 │   ├── .env                             # all configuration lives here
 │   ├── requirements.txt
@@ -438,27 +444,29 @@ enterprise-api-security-auditor-agents/
 │   │   ├── changes.py                   #   change proposals + simulator input
 │   │   ├── kong_adapter.py              #   allowlisted Kong write adapter
 │   │   ├── kong_inventory.py            #   resilient discovery + snapshots
+│   │   ├── conversations.py             #   assistant chat history (Redis)
 │   │   └── vector_store.py              #   Redis index, upsert, curated KNN
 │   ├── scripts/verify_meta.py           #   one-command Meta Model API check
 │   ├── eval/                            #   model + retrieval eval suites
 │   ├── rag/knowledge_ingestor.py        # :5001  ingest + retrieval API
 │   ├── agents/
 │   │   ├── orchestrator.py              #   supervisor-led 9-agent LangGraph
+│   │   ├── assistant.py                 #   conversational copilot graph (chat + tools)
 │   │   ├── schemas.py / tools.py        #   typed state, tool gateway
 │   │   ├── auditor_agent.py             #   legacy single-agent graphs
 │   │   ├── init_auditor.py              # :5000  agent HTTP API
 │   │   └── filtered_kong_data.json      #   cached inventory (offline fallback)
 │   ├── knowledge_base/                  # versioned policy corpus
 │   ├── kong_config/                     # Kong Konnect declarative config
-│   ├── artifacts/                       # generated reports (gitignored)
+│   ├── artifacts/                       # generated reports, snapshots, audit log
 │   └── tests/                           # pytest suite, fully offline
 ├── docs/                                # architecture, API, setup, eval + demo guides
 └── frontend/                            # :3000  React + Tailwind dashboard
     └── src/
         ├── api/client.js                #   every backend call goes through here
-        ├── components/                  #   Header, Sidebar, Login, ui primitives
+        ├── components/                  #   Header, Sidebar, Login, chat cards, ui primitives
         └── pages/                       #   Investigation, Findings, Remediation
-                                         #   Centre, Model Analytics + originals
+                                         #   Centre, Model Analytics, Assistant (chat) + originals
 ```
 
 ---
@@ -698,7 +706,19 @@ Last resort only: `KONG_ADMIN_VERIFY_SSL = false`.
 
 ## Running the stack
 
-Run each service in its **own** PowerShell window, with the venv activated.
+One command starts everything in order (repo root, venv activated):
+
+```powershell
+backend\.venv\Scripts\Activate.ps1
+python start_all.py
+# Options: --skip-redis-test, --skip-frontend, --timeout 90
+```
+
+Each Python service starts only after the previous one answers its health
+endpoint; services already running are detected and skipped. On Windows every
+service opens in its own console window.
+
+Or run each service in its **own** PowerShell window, with the venv activated.
 
 ```powershell
 # Terminal 1 - Redis Test Harness  (:5002)
@@ -866,6 +886,22 @@ Add `?envelope=true` to get `{remediation_plan, summary, findings_count, note, e
 instead of the bare array.
 </details>
 
+### AI Assistant (chat API) — same `http://localhost:5000`
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/v1/ai-agents/assistant/prompts` | Suggested starter prompts |
+| `POST` | `/api/v1/ai-agents/assistant/conversations` | Start a chat (201) |
+| `GET` | `/api/v1/ai-agents/assistant/conversations` | Own chat history, newest first |
+| `GET` | `/api/v1/ai-agents/assistant/conversations/<id>` | Thread + supervised tasks |
+| `DELETE` | `/api/v1/ai-agents/assistant/conversations/<id>` | Delete own thread |
+| `POST` | `/api/v1/ai-agents/assistant/conversations/<id>/messages` | Send a message, get a reply |
+| `POST` | `.../messages/stream` | Same, streamed (header → deltas → done) |
+| `GET` | `/api/v1/ai-agents/assistant/tasks/<task_id>` | Supervised task status |
+
+Chats are isolated per API key. The assistant can read and draft, never
+approve or execute — no such tool exists in its allowlist.
+
 ### Knowledge Ingestor / RAG — `http://localhost:5001`
 
 | Method | Path | Description |
@@ -966,6 +1002,7 @@ sessionStorage and cleared on sign-out.
 | **Knowledge Base** | Ingest the corpus, run vector searches, browse stored chunks |
 | **Security Audit** | Legacy single-agent audit: standards, inventory, export JSON |
 | **Remediation** | Legacy single-agent plan: severity breakdown, export JSON |
+| **AI Assistant** (floating) | Chat copilot on every page: asks, explains, runs tasks, drafts fixes |
 
 Endpoints default to localhost and can optionally be overridden in **`frontend\.env`**:
 
@@ -986,6 +1023,30 @@ After changing it, restart `npm start` - Create React App reads `.env` at startu
 
 ---
 
+## AI Assistant
+
+Click the round button at the bottom-right of any dashboard page to open the
+**AI Security Assistant** — a conversational copilot over the whole system,
+powered by Muse Spark 1.3. In plain words:
+
+- **Ask anything** — "Which APIs are missing authentication?", "Why is SvcB
+  non-compliant?", "Explain this finding."
+- **Run supervised tasks** — "Audit all APIs and flag critical issues."
+  Long work runs through the real agent workflows, with live progress shown
+  in the chat.
+- **Draft fixes** — "Prepare remediation proposals for the critical
+  findings." Proposals link into the approval workflow; nothing is approved
+  or executed from chat, ever.
+- **Trust what you see** — every reply is labelled **Verified findings**
+  (tool output with evidence) or **AI-generated** (model wording), so the two
+  can never be confused.
+
+Chatting is isolated per signed-in user, and injection attempts are refused
+with an explanation. Full design, intents, tools and demo scenarios:
+[AI Assistant](docs/assistant.md).
+
+---
+
 ## Tests
 
 ```powershell
@@ -993,15 +1054,17 @@ backend\.venv\Scripts\Activate.ps1
 python -m pytest backend\tests -q
 ```
 
-296 backend tests covering every agent node, both legacy graphs, the supervisor-led
+378 backend tests covering every agent node, both legacy graphs, the supervisor-led
 orchestrator (parallelism, failure, resume, approval), the policy / threat / risk /
 remediation engines, Konnect vs self-managed auth and entity paths, pagination, the
 route-plugin rollup, remediation batching and its per-finding retry, severity mapping,
 JSON-parsing failure paths, the Kong fallback and snapshots, deterministic RAG ingestion
 and retrieval, API-key auth and the hash-chained audit log, and the **Meta Model API
 provider** (resolution, model id, parameter fallbacks, fenced-JSON parsing, and a full
-audit-graph run on Meta). The LLM, Kong and Redis are all stubbed, so the suite runs
-offline with no credentials. The frontend adds 4 component smoke tests
+audit-graph run on Meta, the assistant chat graph/API, and the `start_all.py`
+launcher). The LLM, Kong and Redis are all stubbed, so the suite runs
+offline with no credentials. The frontend adds 26 tests across 7 suites (app
+shell, login, assistant chat + widget, API client, UI guards)
 (`npm test -- --watchAll=false` from `frontend/`).
 
 ```powershell
@@ -1041,6 +1104,8 @@ Full figures and what was *not* verified live: [test report](docs/test-report.md
 | `401` from the backend with a key set | Wrong key, or the key's role is too low for the route (ingest/deletes need admin). Keys are comma-separated in `ADMIN_API_KEYS` / `OPERATOR_API_KEYS` / `VIEWER_API_KEYS`. |
 | Change executes as simulation only | `KONG_WRITE_ENABLED` defaults to `false`. Live writes also need the change approved and a token with write scope. |
 | Assessment says `cached` / `stale` | Kong was unreachable so discovery served the Redis snapshot. Check `snapshot_source` / `snapshot_age_s`; older than `KONG_SNAPSHOT_STALE_S` (1h) is flagged stale, never presented as live. |
+| `start_all.py` says a port is already held | A previous service window is still running (or stuck mid-startup). Close it and rerun — healthy services are detected and skipped. |
+| Launcher stops at one service with `failed to start` | It names the service and the reason. Read that service's own console window for the traceback; usually Redis is unreachable or a `backend/.env` value is missing. |
 
 ---
 
@@ -1051,6 +1116,7 @@ Beyond this README: [Setup](docs/setup.md) · [Architecture](docs/architecture.m
 [Environment](docs/environment.md) · [Model routing](docs/model-routing-policy.md) ·
 [Test report](docs/test-report.md) · [Kong integration](docs/kong-integration.md) ·
 [Controlled remediation](docs/controlled-remediation.md) ·
+[AI Assistant](docs/assistant.md) ·
 [5-minute demo](docs/demo-script.md) ·
 [3-minute architecture explainer](docs/architecture-explainer.md) ·
 [Why Muse Spark](docs/why-muse-spark.md)
@@ -1064,7 +1130,7 @@ Beyond this README: [Setup](docs/setup.md) · [Architecture](docs/architecture.m
 - **Providers** — Meta (primary reasoning) · Kong AI Gateway + Azure OpenAI (configured fallbacks)
 - **Frontend** — React 19 · Tailwind CSS 3 · lucide-react · Create React App
 - **Gateway** — Kong Gateway 3.x / Konnect, read-only Admin API discovery + allowlisted remediation writes
-- **Tooling** — Postman · pytest (296 tests) · model + retrieval eval suites · Docker Compose
+- **Tooling** — Postman · pytest (378 tests) · model + retrieval eval suites · Docker Compose
 
 ---
 
