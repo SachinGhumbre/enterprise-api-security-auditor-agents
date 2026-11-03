@@ -1,8 +1,8 @@
 """
 ===============================================================================
  File Name   : common/llm.py
- Description : Chat-completion access. Defaults to Meta Model API (Muse Spark);
-               Kong AI Gateway and Azure OpenAI remain as optional providers.
+ Description : Chat-completion access. Meta Model API (Muse Spark) is the
+               reasoning provider; Kong AI Gateway remains as an optional route.
  Project     : Enterprise API Security Auditor
 ===============================================================================
 """
@@ -14,20 +14,7 @@ import requests
 
 from . import config
 
-_azure_client = None
 _meta_client = None
-
-
-def _get_azure_client():
-    global _azure_client
-    if _azure_client is None:
-        from openai import AzureOpenAI
-        _azure_client = AzureOpenAI(
-            api_version=config.AZURE_API_VERSION,
-            azure_endpoint=config.AZURE_OPENAI_ENDPOINT,
-            api_key=config.AZURE_OPENAI_API_KEY,
-        )
-    return _azure_client
 
 
 def _get_meta_client():
@@ -63,8 +50,7 @@ def check_config():
         if not config.META_API_KEY:
             return [
                 "META_API_KEY is not set in backend/.env. Add the key issued by the "
-                "Meta Model API console (https://dev.meta.ai/products/meta-model-api). "
-                "Set LLM_PROVIDER=azure to fall back to Azure OpenAI."
+                "Meta Model API console (https://dev.meta.ai/products/meta-model-api)."
             ]
         if not config.META_MODEL:
             return ["META_MODEL is not set in backend/.env (e.g. muse-spark-1.3)."]
@@ -79,17 +65,7 @@ def check_config():
             return [f"Missing environment variable(s) in backend/.env: {', '.join(missing)}."]
         return []
 
-    missing = [n for n, v in (
-        ("AZURE_OPENAI_API_KEY", config.AZURE_OPENAI_API_KEY),
-        ("AZURE_OPENAI_ENDPOINT", config.AZURE_OPENAI_ENDPOINT),
-        ("AZURE_OPENAI_DEPLOYMENT_NAME", config.AZURE_OPENAI_DEPLOYMENT_NAME),
-    ) if not v]
-    if missing:
-        return [
-            f"Missing environment variable(s) in backend/.env: {', '.join(missing)}. "
-            "Set LLM_PROVIDER=meta plus META_API_KEY to use Meta Model API instead."
-        ]
-    return []
+    return [f"Unknown LLM provider '{active}' in backend/.env. Use meta or kong."]
 
 
 _FENCE_RE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.IGNORECASE)
@@ -125,7 +101,7 @@ def extract_json(text, expect="any"):
 
 
 def _unwrap_openai_envelope(payload):
-    """Kong's ai-response-transformer may return bare JSON; Azure returns an
+    """Kong's ai-response-transformer may return bare JSON instead of an
     OpenAI envelope. Accept either."""
     if isinstance(payload, dict) and "choices" in payload:
         try:
@@ -139,7 +115,7 @@ def chat(messages, route=None, max_tokens=None, temperature=None):
     """Send a chat completion and return the raw response content.
 
     `route` is the Kong AI Gateway path (e.g. /api/v1/agents/auditor) and is
-    ignored when calling Azure directly.
+    only used when the Kong provider is active.
     """
     active = provider()
 
@@ -195,39 +171,9 @@ def chat(messages, route=None, max_tokens=None, temperature=None):
         except ValueError:
             return response.text
 
-    # Hackathon guard: only Meta models are permitted, so refuse to fall through
-    # to Azure rather than silently serving a request from the wrong provider.
-    if config.META_ONLY:
-        raise RuntimeError(
-            "Refusing to call Azure OpenAI: META_ONLY is enabled and only Meta models "
-            "are permitted. Set LLM_PROVIDER=meta with a valid META_API_KEY, or set "
-            "META_ONLY=false in backend/.env to allow non-Meta providers."
-        )
-
-    kwargs = {
-        "model": config.AZURE_OPENAI_DEPLOYMENT_NAME,
-        "messages": messages,
-        # gpt-5.x deployments reject max_tokens and require max_completion_tokens.
-        "max_completion_tokens": max_tokens or config.LLM_MAX_TOKENS,
-    }
-    if temperature is not None:
-        kwargs["temperature"] = temperature
-
-    try:
-        response = _get_azure_client().chat.completions.create(**kwargs)
-    except Exception as exc:
-        message = str(exc)
-        if "max_completion_tokens" in message and "max_tokens" in message:
-            kwargs.pop("max_completion_tokens")
-            kwargs["max_tokens"] = max_tokens or config.LLM_MAX_TOKENS
-            response = _get_azure_client().chat.completions.create(**kwargs)
-        elif "temperature" in message and temperature is not None:
-            kwargs.pop("temperature")
-            response = _get_azure_client().chat.completions.create(**kwargs)
-        else:
-            raise
-
-    return response.choices[0].message.content
+    raise RuntimeError(
+        f"Unknown LLM provider '{active}' in backend/.env. Use meta or kong."
+    )
 
 
 def _usage_of(response):
@@ -287,41 +233,6 @@ def complete_meta(model, messages, max_tokens=None, temperature=None):
     return response.choices[0].message.content, _usage_of(response)
 
 
-def complete_azure(deployment, messages, max_tokens=None, temperature=None):
-    """Azure OpenAI completion against an explicit deployment.
-
-    Returns (content, usage|None). No META_ONLY check here: fallback policy
-    is enforced by the router; this is raw transport.
-    """
-    if not deployment:
-        raise RuntimeError(
-            "Azure deployment name is not configured "
-            "(AZURE_OPENAI_DEPLOYMENT_NAME is empty).")
-    kwargs = {
-        "model": deployment,
-        "messages": messages,
-        "max_completion_tokens": max_tokens or config.LLM_MAX_TOKENS,
-    }
-    if temperature is not None:
-        kwargs["temperature"] = temperature
-
-    try:
-        response = _get_azure_client().chat.completions.create(**kwargs)
-    except Exception as exc:
-        message = str(exc)
-        if "max_completion_tokens" in message and "max_tokens" in message:
-            kwargs.pop("max_completion_tokens")
-            kwargs["max_tokens"] = max_tokens or config.LLM_MAX_TOKENS
-            response = _get_azure_client().chat.completions.create(**kwargs)
-        elif "temperature" in message and temperature is not None:
-            kwargs.pop("temperature")
-            response = _get_azure_client().chat.completions.create(**kwargs)
-        else:
-            raise
-
-    return response.choices[0].message.content, _usage_of(response)
-
-
 def complete_kong(messages, route=None, max_tokens=None):
     """Kong AI Gateway completion. Returns (content, usage|None)."""
     url = f"{config.KONG_AI_PROXY_HOSTNAME}{route or ''}"
@@ -358,19 +269,6 @@ def stream_meta(model, messages, max_tokens=None):
         model=model,
         messages=messages,
         max_tokens=max_tokens or config.LLM_MAX_TOKENS,
-        stream=True,
-    )
-    return _iter_deltas(stream)
-
-
-def stream_azure(deployment, messages, max_tokens=None):
-    """Yield text deltas from a streaming Azure completion."""
-    if not deployment:
-        raise RuntimeError("Azure deployment name is not configured.")
-    stream = _get_azure_client().chat.completions.create(
-        model=deployment,
-        messages=messages,
-        max_completion_tokens=max_tokens or config.LLM_MAX_TOKENS,
         stream=True,
     )
     return _iter_deltas(stream)

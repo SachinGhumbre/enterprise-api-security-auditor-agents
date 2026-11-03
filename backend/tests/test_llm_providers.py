@@ -67,18 +67,26 @@ def test_meta_is_preferred_when_key_present(monkeypatch):
     assert config.resolve_llm_provider() == "meta"
 
 
-def test_falls_back_to_azure_without_meta_key(monkeypatch):
+def test_auto_uses_kong_without_meta_key(monkeypatch):
+    monkeypatch.setattr(config, "LLM_PROVIDER", "auto")
+    monkeypatch.setattr(config, "META_API_KEY", None)
+    monkeypatch.setattr(config, "KONG_AI_PROXY_HOSTNAME", "https://proxy.local")
+    monkeypatch.setattr(config, "KONG_API_KEY", "kong_test_key")
+    assert config.resolve_llm_provider() == "kong"
+
+
+def test_auto_defaults_to_meta_without_any_credentials(monkeypatch):
     monkeypatch.setattr(config, "LLM_PROVIDER", "auto")
     monkeypatch.setattr(config, "META_API_KEY", None)
     monkeypatch.setattr(config, "KONG_AI_PROXY_HOSTNAME", None)
     monkeypatch.setattr(config, "KONG_API_KEY", None)
-    assert config.resolve_llm_provider() == "azure"
+    assert config.resolve_llm_provider() == "meta"
 
 
 def test_explicit_provider_overrides_auto_detection(monkeypatch):
-    monkeypatch.setattr(config, "LLM_PROVIDER", "azure")
+    monkeypatch.setattr(config, "LLM_PROVIDER", "kong")
     monkeypatch.setattr(config, "META_API_KEY", "meta_test_key")
-    assert config.resolve_llm_provider() == "azure"
+    assert config.resolve_llm_provider() == "kong"
 
 
 def test_active_model_reports_muse_spark(meta_mode):

@@ -2,61 +2,61 @@
   {
     "serviceName": "AM_FCA_SF",
     "policyName": "GDPR",
-    "issue": "GDPR mapping marks JWT Authentication as Mandatory and OAuth2 / OpenID Connect as Mandatory; service has openid-connect but is missing jwt",
+    "issue": "GDPR requires JWT Authentication as Mandatory and OAuth2 / OpenID Connect as Mandatory; service has openid-connect but is missing jwt. Evidence: Data Privacy & GDPR Policy v2.0 [06_gdpr_privacy.txt, Applies-To: pii-apis]",
     "missingPlugin": "jwt",
-    "recommendedAction": "Enable and configure the jwt plugin on AM_FCA_SF to complement existing openid-connect; configure JWKS, issuer, and claim validations and test authenticated flows.",
+    "recommendedAction": "Enable and configure jwt plugin on AM_FCA_SF to complement existing openid-connect for GDPR authentication compliance",
     "severity": "Medium",
-    "owner": "API Security Team",
-    "estimatedEffort": "4 hours",
-    "impact": "Unauthenticated requests will be blocked; requires clients to present valid JWTs with minor latency increase.",
-    "securityStandardReference": "OWASP API Top 10 2023 API2:2023 Broken Authentication; GDPR Article 32 Security of Processing"
+    "owner": "API Platform Team",
+    "estimatedEffort": "1-2 days",
+    "impact": "Enforces mandatory authentication; prevents unauthorized access to personal data",
+    "securityStandardReference": "GDPR Article 32 - Security of Processing; OWASP API Top 10 2023 API2:2023 Broken Authentication"
   },
   {
     "serviceName": "Healthcheck",
     "policyName": "GDPR",
-    "issue": "Service has no plugins enabled, missing mandatory GDPR authentication plugins: JWT Authentication and OAuth2 / OpenID Connect per plugin-to-standard mapping.",
+    "issue": "Service has no plugins enabled, but GDPR mapping lists JWT Authentication and OAuth2 / OpenID Connect as Mandatory for secure handling of personal data. Evidence: Data Privacy & GDPR Policy v2.0 [06_gdpr_privacy.txt, Applies-To: pii-apis]",
     "missingPlugin": "JWT Authentication, OAuth2 / OpenID Connect",
-    "recommendedAction": "Enable JWT Authentication and OAuth2 / OpenID Connect (openid-connect or oauth2 + jwt) on Healthcheck; define auth scope, exclude liveness probe if needed via anonymous or route split.",
+    "recommendedAction": "Enable and configure JWT Authentication and OAuth2 / OpenID Connect plugins on Healthcheck",
     "severity": "Medium",
-    "owner": "API Security Team",
-    "estimatedEffort": "1 day",
-    "impact": "Service will require authentication; ensure monitoring/health probes use valid credentials or unauthenticated exception path.",
-    "securityStandardReference": "NIST 800-53 IA-2 Identification and Authentication; GDPR Article 32 Security of Processing"
+    "owner": "API Platform Team",
+    "estimatedEffort": "2-3 days",
+    "impact": "Secures endpoint handling personal data; prevents unauthenticated access",
+    "securityStandardReference": "GDPR Article 32 - Security of Processing; NIST 800-53 IA-2 Identification and Authentication"
   },
   {
     "serviceName": "MyMetaAIGatewayService",
     "policyName": "GDPR",
-    "issue": "GDPR requires JWT Authentication and OAuth2/OpenID Connect as Mandatory per mapping; Authentication Policy v1.0 requires jwt, oauth2, key-auth. Service has key-auth, acl, ai-proxy-advanced but lacks jwt and oauth2, so does not satisfy GDPR authentication requirements.",
+    "issue": "Service lacks mandatory JWT Authentication and OAuth2 / OpenID Connect plugins required for GDPR; enabled key-auth, acl, ai-proxy-advanced do not satisfy GDPR authentication requirement. Evidence: Data Privacy & GDPR Policy v2.0 [06_gdpr_privacy.txt, Applies-To: pii-apis]",
     "missingPlugin": "jwt, oauth2",
-    "recommendedAction": "Enable and configure jwt and oauth2 (or openid-connect) plugins on MyMetaAIGatewayService alongside existing key-auth and acl; migrate clients to OAuth2 token flow with JWT validation.",
+    "recommendedAction": "Enable and configure jwt and oauth2/OpenID Connect plugins on MyMetaAIGatewayService to meet GDPR mandatory authentication",
     "severity": "Medium",
-    "owner": "API Security Team",
-    "estimatedEffort": "2 days",
-    "impact": "Stronger user authentication for AI gateway; key-auth clients must migrate to OAuth2/JWT, requires coordination.",
-    "securityStandardReference": "OWASP API Top 10 2023 API2:2023 Broken Authentication; ISO 27001:2022 A.5.17 Authentication Information"
+    "owner": "API Platform Team",
+    "estimatedEffort": "2-3 days",
+    "impact": "Ensures strong authentication for AI gateway; key-auth alone insufficient for PII protection",
+    "securityStandardReference": "GDPR Article 32 - Security of Processing; OWASP API Top 10 2023 API2:2023 Broken Authentication"
   },
   {
     "serviceName": "new-service-20260525181340158",
     "policyName": "GDPR",
-    "issue": "No plugins enabled; GDPR requires secure handling of personal data and both JWT Authentication and OAuth2 / OpenID Connect are listed as Mandatory for GDPR.",
+    "issue": "Service has no plugins enabled; GDPR requires JWT Authentication and OAuth2 / OpenID Connect (both Mandatory per mapping) for secure handling of personal data. Evidence: Data Privacy & GDPR Policy v2.0 [06_gdpr_privacy.txt, Applies-To: pii-apis]",
     "missingPlugin": "JWT Authentication, OAuth2 / OpenID Connect",
-    "recommendedAction": "Enable JWT Authentication and OAuth2 / OpenID Connect on new-service-20260525181340158; configure IdP integration, token validation, and access policies before production traffic.",
+    "recommendedAction": "Enable and configure JWT Authentication and OAuth2 / OpenID Connect plugins on new-service-20260525181340158",
     "severity": "Medium",
-    "owner": "API Security Team",
-    "estimatedEffort": "1 day",
-    "impact": "All API access will require valid OAuth2/JWT tokens; prevents unauthenticated access to personal data.",
-    "securityStandardReference": "GDPR Article 5(1)(f) Integrity and Confidentiality and Article 32; NIST 800-53 AC-3 Access Enforcement"
+    "owner": "API Platform Team",
+    "estimatedEffort": "2-3 days",
+    "impact": "Brings new service into GDPR compliance; blocks unauthenticated PII exposure",
+    "securityStandardReference": "GDPR Article 5(1)(f) Integrity and Confidentiality; ISO 27001:2022 A.5.17 Authentication Information"
   },
   {
     "serviceName": "orders-api",
     "policyName": "GDPR",
-    "issue": "Service enables only ai-mcp-proxy and lacks Mandatory GDPR authentication plugins JWT Authentication and OAuth2 / OpenID Connect required for secure handling of personal data.",
+    "issue": "Enabled plugin ai-mcp-proxy does not satisfy GDPR requirements; mapping table marks JWT Authentication and OAuth2 / OpenID Connect as Mandatory for GDPR. Evidence: Data Privacy & GDPR Policy v2.0 [06_gdpr_privacy.txt, Applies-To: pii-apis]",
     "missingPlugin": "JWT Authentication, OAuth2 / OpenID Connect",
-    "recommendedAction": "Enable JWT Authentication and OAuth2 / OpenID Connect (openid-connect) on orders-api in front of ai-mcp-proxy; enforce token validation and scopes for order operations.",
+    "recommendedAction": "Enable and configure JWT Authentication and OAuth2 / OpenID Connect plugins on orders-api in addition to ai-mcp-proxy",
     "severity": "Medium",
-    "owner": "API Security Team",
-    "estimatedEffort": "1 day",
-    "impact": "MCP/AI consumers must authenticate with OAuth2/JWT; blocks anonymous access to order data with minimal functional change.",
-    "securityStandardReference": "OWASP API Top 10 2023 API1:2023 Broken Object Level Authorization and API2:2023 Broken Authentication; PCI-DSS Req 8.3"
+    "owner": "API Platform Team",
+    "estimatedEffort": "2-3 days",
+    "impact": "Adds required authentication layer; prevents unauthorized order/PII data access",
+    "securityStandardReference": "GDPR Article 32 - Security of Processing; OWASP API Top 10 2023 API2:2023 Broken Authentication"
   }
 ]

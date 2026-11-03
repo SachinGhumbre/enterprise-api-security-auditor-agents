@@ -246,8 +246,6 @@ def default_transport(provider, model, messages, max_tokens, route):
     """Raw provider call. Returns (text, usage|None)."""
     if provider == "meta":
         return llm.complete_meta(model, messages, max_tokens)
-    if provider == "azure":
-        return llm.complete_azure(model, messages, max_tokens)
     if provider == "kong":
         return llm.complete_kong(messages, route, max_tokens)
     raise RouterError(f"Unknown provider '{provider}'.")
@@ -257,8 +255,6 @@ def default_stream_transport(provider, model, messages, max_tokens, route):
     """Raw streaming call. Returns an iterator of text deltas."""
     if provider == "meta":
         return llm.stream_meta(model, messages, max_tokens)
-    if provider == "azure":
-        return llm.stream_azure(model, messages, max_tokens)
     raise RouterError(
         f"Streaming is not supported for provider '{provider}'.")
 
@@ -303,14 +299,7 @@ class Router:
                 skipped.append({"provider": provider,
                                 "reason": "blocked by META_ONLY=true"})
                 continue
-            if provider == "azure":
-                deployment = config.AZURE_OPENAI_DEPLOYMENT_NAME or ""
-                if not deployment:
-                    skipped.append({"provider": provider,
-                                    "reason": "AZURE_OPENAI_DEPLOYMENT_NAME unset"})
-                    continue
-                selected.append((provider, deployment))
-            elif provider == "kong":
+            if provider == "kong":
                 if not (config.KONG_AI_PROXY_HOSTNAME and config.KONG_API_KEY):
                     skipped.append({"provider": provider,
                                     "reason": "Kong AI Gateway not configured"})

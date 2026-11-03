@@ -84,7 +84,7 @@ KNOWN_PLUGINS = frozenset({
     # Logging / observability
     "file-log", "http-log", "tcp-log", "syslog", "statsd", "prometheus",
     "zipkin", "opentelemetry",
-    # AI Gateway plugins (referenced by backend/kong_config/)
+    # AI Gateway plugins
     "ai-proxy", "ai-proxy-advanced", "ai-prompt-decorator", "ai-prompt-template",
     "ai-prompt-guard", "ai-response-transformer", "ai-request-transformer",
     "ai-rag-injector", "ai-aws-guardrails", "ai-azure-content-safety",

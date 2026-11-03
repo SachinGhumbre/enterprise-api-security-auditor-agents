@@ -8,7 +8,7 @@ default: an empty model id raises instead of guessing.
 
 - Muse Spark 1.3 (`META_MODEL`) is the primary engine for every reasoning task.
 - Scoring, rule evaluation and verification stay deterministic in `rules.py`.
-- Azure OpenAI keeps embeddings and serves as optional, configured fallback only.
+- Embeddings are produced locally; no external embedding service is used.
 - Fallback is observable: every skip, retry and fallback lands in the call log.
 - Auth, malformed-request and unknown-model errors never retry or fall back.
 
@@ -75,7 +75,7 @@ default: an empty model id raises instead of guessing.
 
 ## Fallback rules
 
-- Order comes from `LLM_FALLBACK_ORDER` (`none` by default; e.g. `azure`).
+- Order comes from `LLM_FALLBACK_ORDER` (`none` by default; e.g. `kong`).
 - Only retryable errors fall back: timeouts, connection errors, HTTP 429/5xx.
 - `401/403`, malformed requests and `model_not_found` raise immediately.
 - `META_ONLY=true` (default) blocks non-Meta fallback; the skip is recorded.
@@ -108,14 +108,13 @@ default: an empty model id raises instead of guessing.
 ## Evaluation
 
 `python backend/eval/run_eval.py --compare mock:good mock:weak` runs the offline
-harness check (deterministic judges, no keys). Live runs use `--compare meta
-azure` and need `META_API_KEY` plus the Azure endpoint/key/deployment with
-`META_ONLY=false`.
+harness check (deterministic judges, no keys). A live `--compare meta ...`
+run needs `META_API_KEY`.
 
 Latest measured harness check (mock exemplars, proves discrimination only):
 
 - mock:good — 6/6 passed, avg score 1.000.
 - mock:weak — 0/6 passed, avg score 0.561.
 
-No live model comparison has been measured in this environment, so no claim is
-made about either model being better. Run the live comparison to obtain one.
+No live model run has been measured in this environment (it needs keys +
+network), so no claim is made beyond the mocks. Run it to obtain one.

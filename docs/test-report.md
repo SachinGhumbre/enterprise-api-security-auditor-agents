@@ -7,7 +7,7 @@ hackathon. Sandbox limits are stated, not hidden.
 
 | Suite | Result | Notes |
 |---|---|---|
-| Backend (`pytest backend/tests`) | **378 passed, 0 failed** | Covers all 9 agents, router, policy, threats, risks, changes, Kong adapter/inventory, RAG, auth, validation, audit log, assistant chat/API, and the `start_all.py` launcher |
+| Backend (`pytest backend/tests`) | **379 passed, 0 failed** | Covers all 9 agents, router, policy, threats, risks, changes, Kong adapter/inventory, RAG, auth, validation, audit log, assistant chat/API, and the `start_all.py` launcher |
 | Frontend (`react-scripts test`) | **26 passed, 7 suites** | App shell + widget, login, assistant chat, chat cards, API client, UI primitives, env guards |
 | Frontend build (`npm run build`, CI) | **Compiles** | ESLint-clean production bundle (verified) |
 | Flask construct smoke | **21 + 9 routes** | Both apps build their route maps |
@@ -27,9 +27,8 @@ corpus files:
 `python backend/eval/run_eval.py --compare mock:good mock:weak`, 6 tasks:
 
 - mock:good **6/6, avg 1.000**; mock:weak **0/6, avg 0.561**.
-- Proves the judge discriminates; it says nothing about Muse Spark vs
-  any fallback. A live `meta` vs `azure` comparison needs keys +
-  network and was not run — no superiority claim is made.
+- Proves the judge discriminates. A live `meta` run needs keys +
+  network and was not run here.
 
 ## Scenario coverage (38 security tests)
 
@@ -43,7 +42,6 @@ corpus files:
 
 ## Not verified here
 
-- Live Redis Stack, live Kong Admin API, live Meta inference, and the
-  `meta` vs `azure`
-  eval comparison. Verify these on the demo machine with
-  `docs/setup.md`, then re-run the two eval commands above.
+- Live Redis Stack, live Kong Admin API, and live Meta inference.
+  Verify these on the demo machine with `docs/setup.md`, then re-run
+  the two eval commands above.

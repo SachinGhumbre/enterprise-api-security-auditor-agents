@@ -6,6 +6,8 @@ against GDPR, HIPAA, PCI-DSS, ISO 27001, OWASP API Top 10, PSD2/SCA, NIST and SO
 
 ---
 
+![Enterprise API Security Auditor](image.png)
+
 ## Table of Contents
 
 1. [The problem](#the-problem)
@@ -173,7 +175,7 @@ response = client.chat.completions.create(
 
 All LLM access funnels through a central router (`backend/common/router.py`) over
 transports in `backend/common/llm.py`, so the provider is a single configuration
-switch (`meta` | `kong` | `azure`) rather than something scattered across the
+switch (`meta` | `kong`) rather than something scattered across the
 agents. No agent picks its own model, and an empty model id refuses to call.
 
 ### Setup — one value to change
@@ -196,9 +198,9 @@ It checks configuration, network reachability, a live chat completion, and a rea
 structured-audit response — and tells you precisely which step failed.
 
 > **Note on embeddings.** Meta Model API does not currently expose an embeddings
-> endpoint, so the RAG *retrieval* layer uses a separate embedding provider
-> (`EMBEDDING_PROVIDER`). All **reasoning** — every compliance verdict and every
-> remediation action — runs on Muse Spark.
+> endpoint, so the RAG *retrieval* layer uses locally produced vectors. All
+> **reasoning** — every compliance verdict and every remediation action — runs
+> on Muse Spark.
 
 ---
 
@@ -434,8 +436,8 @@ enterprise-api-security-auditor-agents/
 │   │   ├── auth.py                      #   API-key auth, viewer/operator/admin
 │   │   ├── validation.py                #   payload validation, prompt sanitising
 │   │   ├── audit_log.py                 #   hash-chained audit log
-│   │   ├── embeddings.py                #   Azure / local embedding providers
-│   │   ├── llm.py                       #   Meta | Kong AI Gateway | Azure
+│   │   ├── embeddings.py                #   offline embedding provider
+│   │   ├── llm.py                       #   Meta | Kong AI Gateway route
 │   │   ├── router.py                    #   central model router + call log
 │   │   ├── rules.py                     #   deterministic verdict verification
 │   │   ├── policy.py                    #   versioned control catalog
@@ -457,7 +459,6 @@ enterprise-api-security-auditor-agents/
 │   │   ├── init_auditor.py              # :5000  agent HTTP API
 │   │   └── filtered_kong_data.json      #   cached inventory (offline fallback)
 │   ├── knowledge_base/                  # versioned policy corpus
-│   ├── kong_config/                     # Kong Konnect declarative config
 │   ├── artifacts/                       # generated reports, snapshots, audit log
 │   └── tests/                           # pytest suite, fully offline
 ├── docs/                                # architecture, API, setup, eval + demo guides
@@ -480,7 +481,6 @@ enterprise-api-security-auditor-agents/
 | **Docker Desktop** | latest | Only if running Redis locally |
 | **Redis Stack** | 7+ | **Must include the RediSearch module** |
 | **Meta Model API key** | — | **Required.** From the Meta Model API console |
-| **Azure OpenAI** | — | Optional fallback provider, and embeddings for RAG |
 | **Kong Konnect** _or_ **Kong Gateway** | — / 3.x | Optional — the audit falls back to a cached inventory |
 
 > **Plain `redis` will not work.** Vector search needs the RediSearch module, which
@@ -600,14 +600,12 @@ Verify with `python backend\scripts\verify_meta.py`.
 
 | Variable | Values | Behaviour |
 |---|---|---|
-| `LLM_PROVIDER` | `meta` \| `kong` \| `azure` \| `auto` | `meta` is the hackathon target; `auto` prefers Meta when `META_API_KEY` is set, then Kong, then Azure |
-| `EMBEDDING_PROVIDER` | `auto` \| `azure` \| `local` | `local` is a deterministic hashed bag-of-words vector — lexical match only, see the warning below |
+| `LLM_PROVIDER` | `meta` \| `kong` \| `auto` | `meta` is the hackathon target; `auto` prefers Meta when `META_API_KEY` is set, else Kong |
 
-> **About `EMBEDDING_PROVIDER=local`.** It needs local embeddings deployment, so the
-> RAG pipeline runs offline. But it is a **lexical** embedding: it matches shared
-> vocabulary, *not* paraphrase. Keyword queries rank correctly; semantically-worded
-> questions will not. Deploy `text-embedding-3-small` in Azure and set
-> `EMBEDDING_PROVIDER=azure` for real semantic retrieval if needed.
+> **About embeddings.** Retrieval vectors are deterministic hashed bag-of-words,
+> so the RAG pipeline runs fully offline. But they are **lexical**: they match
+> shared vocabulary, *not* paraphrase. Keyword queries rank correctly;
+> semantically-worded questions will not.
 
 ### Kong
 
@@ -1054,7 +1052,7 @@ backend\.venv\Scripts\Activate.ps1
 python -m pytest backend\tests -q
 ```
 
-378 backend tests covering every agent node, both legacy graphs, the supervisor-led
+379 backend tests covering every agent node, both legacy graphs, the supervisor-led
 orchestrator (parallelism, failure, resume, approval), the policy / threat / risk /
 remediation engines, Konnect vs self-managed auth and entity paths, pagination, the
 route-plugin rollup, remediation batching and its per-finding retry, severity mapping,
@@ -1085,11 +1083,9 @@ Full figures and what was *not* verified live: [test report](docs/test-report.md
 | HTTP 403 with an HTML body from `api.meta.ai` | A corporate proxy (Zscaler etc.) is blocking Meta, not an auth failure. Allowlist `api.meta.ai` / `dev.meta.ai` or run off the corporate network. |
 | `401` from Meta Model API | Key invalid or expired. Re-issue it in the Meta Model API console. |
 | Meta model name rejected | Confirm `META_MODEL=muse-spark-1.3`. |
-| `404 DeploymentNotFound` | The name is set but no such deployment exists on that endpoint. List them: `GET {endpoint}/openai/deployments?api-version=2023-03-15-preview` with header `api-key`. |
-| `400 OperationNotSupported` | You pointed the embedding variable at a **chat** deployment. They are separate resources. |
 | `search_module: false` in health | Running plain `redis`. Switch to `redis/redis-stack-server`. |
 | `Index ... does not exist` on search | Run `POST /api/v1/knowledge/ingest` first. |
-| Embedding dimension mismatch | `VECTOR_DIMENSIONS` must match the model: `3-small`=1536, `3-large`=3072. Then `POST /api/v1/knowledge/index` with `{"recreate": true}`. |
+| Embedding dimension mismatch | `VECTOR_DIMENSIONS` must match the stored vectors. Fix the value, then `POST /api/v1/knowledge/index` with `{"recreate": true}` and re-ingest. |
 | Kong `401 Unauthorized` | A Konnect PAT was sent as `kong-admin-token`. Set `KONG_ADMIN_MODE=konnect` (or leave `auto`) so it goes out as `Authorization: Bearer`. |
 | Kong `404 Not Found` on `/services` | Konnect nests entities under `core-entities/`, and `KONG_ADMIN_API` must include `/v2/control-planes/<id>`. |
 | `'utf-8' codec can't decode byte 0xNN` on `/redis/all_embeddings` | The connection was decoding every field as text, but ingested chunks store `vector` as packed FLOAT32 bytes. Fixed by using `decode_responses=False` and decoding per field; if you see it elsewhere, do the same rather than skipping the field. |
@@ -1127,10 +1123,10 @@ Beyond this README: [Setup](docs/setup.md) · [Architecture](docs/architecture.m
 
 - **Models** — **Meta Model API** (`muse-spark-1.3`, Muse Spark series) · **Muse Code** (development)
 - **Backend** — Python 3.11+ · Flask · LangGraph (supervisor + 9 logical agents) · Redis Stack (RediSearch) · NumPy
-- **Providers** — Meta (primary reasoning) · Kong AI Gateway + Azure OpenAI (configured fallbacks)
+- **Providers** — Meta Model API (all reasoning) · Kong AI Gateway (optional route)
 - **Frontend** — React 19 · Tailwind CSS 3 · lucide-react · Create React App
 - **Gateway** — Kong Gateway 3.x / Konnect, read-only Admin API discovery + allowlisted remediation writes
-- **Tooling** — Postman · pytest (378 tests) · model + retrieval eval suites · Docker Compose
+- **Tooling** — Postman · pytest (379 tests) · model + retrieval eval suites · Docker Compose
 
 ---
 

@@ -38,7 +38,7 @@ No keys anywhere = single-user mode (all endpoints open).
 | `META_API_KEY` (or `MODEL_API_KEY`) | _(none)_ | Required for live reasoning |
 | `META_MODEL` | `muse-spark-1.3` | Explicit model id; empty refuses to call |
 | `META_BASE_URL` | `https://api.meta.ai/v1` | OpenAI-compatible endpoint |
-| `LLM_PROVIDER` | `auto` | `meta` / `kong` / `azure` / `auto` |
+| `LLM_PROVIDER` | `auto` | `meta` / `kong` / `auto` |
 | `META_ONLY` | `true` | Forbid non-Meta reasoning providers |
 | `LLM_FALLBACK_ORDER` | `none` | Opt-in fallback chain |
 | `LLM_TIMEOUT` / `LLM_MAX_TOKENS` | `120` / `8000` | Per-call bounds |
@@ -48,13 +48,8 @@ No keys anywhere = single-user mode (all endpoints open).
 
 ## Embeddings
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `EMBEDDING_PROVIDER` | `auto` | `azure` / `local` / `auto` |
-| `AZURE_OPENAI_API_KEY` / `AZURE_OPENAI_ENDPOINT` | _(none)_ | Azure credentials |
-| `AZURE_API_VERSION` | `2024-12-01-preview` | API version |
-| `AZURE_OPENAI_DEPLOYMENT_NAME` | _(none)_ | Chat deployment (fallback) |
-| `AZURE_OPENAI_EMBEDDING_DEPLOYMENT` | _(none)_ | Embedding deployment |
+Retrieval vectors are produced locally (deterministic hashed bag-of-words
+over `VECTOR_DIMENSIONS`); there is no embedding provider to configure.
 
 ## Kong discovery (read-only)
 

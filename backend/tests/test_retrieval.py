@@ -90,7 +90,7 @@ def test_embedding_space_verification(monkeypatch):
     monkeypatch.setattr(_config, "VECTOR_DIMENSIONS", 1536)
     assert vector_store.require_embedding_space() is True
     monkeypatch.setattr(vector_store, "load_embedding_record",
-                        lambda: {"provider": "azure", "model": "dep",
+                        lambda: {"provider": "other", "model": "dep",
                                  "dimensions": 1536})
     with pytest.raises(RuntimeError, match="[Rr]e-ingest"):
         vector_store.require_embedding_space()

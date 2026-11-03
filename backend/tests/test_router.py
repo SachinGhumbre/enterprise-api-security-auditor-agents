@@ -76,7 +76,8 @@ def test_retryable_error_retries_then_succeeds(monkeypatch):
 def test_auth_error_never_retries_or_falls_back(monkeypatch):
     monkeypatch.setattr(config, "META_MODEL", "muse-spark-1.3")
     monkeypatch.setattr(config, "META_ONLY", False)
-    monkeypatch.setattr(config, "AZURE_OPENAI_DEPLOYMENT_NAME", "dep")
+    monkeypatch.setattr(config, "KONG_AI_PROXY_HOSTNAME", "https://proxy.local")
+    monkeypatch.setattr(config, "KONG_API_KEY", "kong_test_key")
     calls = []
 
     def denied(provider, model, messages, max_tokens, route):
@@ -84,7 +85,7 @@ def test_auth_error_never_retries_or_falls_back(monkeypatch):
         raise RuntimeError("401 Unauthorized: invalid api key")
 
     with pytest.raises(router.RouterError, match="auth"):
-        _router(transport=denied, fallback_order=["azure"]).run(
+        _router(transport=denied, fallback_order=["kong"]).run(
             router.RISK_REASONING, [{"role": "user", "content": "hi"}])
     assert calls == ["meta"]
 
@@ -92,7 +93,8 @@ def test_auth_error_never_retries_or_falls_back(monkeypatch):
 def test_unknown_model_never_falls_back(monkeypatch):
     monkeypatch.setattr(config, "META_MODEL", "muse-spark-9.9")
     monkeypatch.setattr(config, "META_ONLY", False)
-    monkeypatch.setattr(config, "AZURE_OPENAI_DEPLOYMENT_NAME", "dep")
+    monkeypatch.setattr(config, "KONG_AI_PROXY_HOSTNAME", "https://proxy.local")
+    monkeypatch.setattr(config, "KONG_API_KEY", "kong_test_key")
     calls = []
 
     def missing(provider, model, messages, max_tokens, route):
@@ -100,7 +102,7 @@ def test_unknown_model_never_falls_back(monkeypatch):
         raise RuntimeError("model_not_found")
 
     with pytest.raises(router.RouterError, match="not_found"):
-        _router(transport=missing, fallback_order=["azure"]).run(
+        _router(transport=missing, fallback_order=["kong"]).run(
             router.REMEDIATION_PLANNING, [{"role": "user", "content": "hi"}])
     assert calls == ["meta"]
 
@@ -110,7 +112,8 @@ def test_unknown_model_never_falls_back(monkeypatch):
 def test_retryable_exhaustion_falls_back(monkeypatch):
     monkeypatch.setattr(config, "META_MODEL", "muse-spark-1.3")
     monkeypatch.setattr(config, "META_ONLY", False)
-    monkeypatch.setattr(config, "AZURE_OPENAI_DEPLOYMENT_NAME", "dep")
+    monkeypatch.setattr(config, "KONG_AI_PROXY_HOSTNAME", "https://proxy.local")
+    monkeypatch.setattr(config, "KONG_API_KEY", "kong_test_key")
     calls = []
 
     def failover(provider, model, messages, max_tokens, route):
@@ -119,12 +122,12 @@ def test_retryable_exhaustion_falls_back(monkeypatch):
             raise RuntimeError("503 Service Unavailable")
         return '{"ok": true}', None
 
-    response = _router(transport=failover, fallback_order=["azure"]).run(
+    response = _router(transport=failover, fallback_order=["kong"]).run(
         router.EXECUTIVE_EXPLANATION, [{"role": "user", "content": "hi"}])
-    assert response.provider == "azure"
+    assert response.provider == "kong"
     assert response.fallback_used is True
     assert "503" in response.fallback_reason
-    assert calls[0] == "meta" and calls[-1] == "azure"
+    assert calls[0] == "meta" and calls[-1] == "kong"
 
 
 def test_no_fallback_configured_raises_exhausted(monkeypatch):
@@ -141,17 +144,18 @@ def test_no_fallback_configured_raises_exhausted(monkeypatch):
 def test_meta_only_blocks_fallback_observably(monkeypatch):
     monkeypatch.setattr(config, "META_MODEL", "muse-spark-1.3")
     monkeypatch.setattr(config, "META_ONLY", True)
-    monkeypatch.setattr(config, "AZURE_OPENAI_DEPLOYMENT_NAME", "dep")
+    monkeypatch.setattr(config, "KONG_AI_PROXY_HOSTNAME", "https://proxy.local")
+    monkeypatch.setattr(config, "KONG_API_KEY", "kong_test_key")
 
     def down(provider, model, messages, max_tokens, route):
         raise RuntimeError("503 Service Unavailable")
 
-    instance = _router(transport=down, fallback_order=["azure"])
+    instance = _router(transport=down, fallback_order=["kong"])
     with pytest.raises(router.RouterError):
         instance.run(router.SECURITY_INVESTIGATION,
                      [{"role": "user", "content": "hi"}])
     (entry,) = instance.get_call_log()
-    assert {"provider": "azure", "reason": "blocked by META_ONLY=true"} in entry["skipped"]
+    assert {"provider": "kong", "reason": "blocked by META_ONLY=true"} in entry["skipped"]
 
 
 # --- circuit breaker -----------------------------------------------------------------------

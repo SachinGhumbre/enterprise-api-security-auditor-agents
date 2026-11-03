@@ -27,7 +27,7 @@ flowchart TB
         RS[("Redis Stack<br/>vectors · snapshots")]
         KONG["Kong Konnect/Gateway<br/>read-only Admin API"]
         META["Meta Model API<br/>muse-spark-1.3"]
-        AZ["Azure OpenAI<br/>embeddings · fallback"]
+        KG["Kong AI Gateway<br/>optional LLM route"]
         ART[("Artifacts + audit log<br/>reports · evidence")]
     end
 
@@ -42,10 +42,9 @@ flowchart TB
     GRAPH --> RS
     GRAPH --> KONG
     GRAPH --> META
-    GRAPH -. fallback .-> AZ
+    GRAPH -. fallback .-> KG
     GRAPH --> ART
     ING --> RS
-    ING -. embeddings .-> AZ
 ```
 
 ## The 13-step journey, mapped to code

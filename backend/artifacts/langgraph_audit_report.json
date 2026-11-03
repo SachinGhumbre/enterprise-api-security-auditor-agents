@@ -9,7 +9,7 @@
           "JWT Authentication",
           "OAuth2 / OpenID Connect"
         ],
-        "details": "Service enables only ai-mcp-proxy and lacks Mandatory GDPR authentication plugins JWT Authentication and OAuth2 / OpenID Connect required for secure handling of personal data.",
+        "details": "Enabled plugin ai-mcp-proxy does not satisfy GDPR requirements; mapping table marks JWT Authentication and OAuth2 / OpenID Connect as Mandatory for GDPR.",
         "verification": {
           "status": "verified",
           "confidence": "high",
@@ -140,7 +140,7 @@
         "missing_plugins": [
           "jwt"
         ],
-        "details": "GDPR mapping marks JWT Authentication as Mandatory and OAuth2 / OpenID Connect as Mandatory; service has openid-connect but is missing jwt",
+        "details": "GDPR requires JWT Authentication as Mandatory and OAuth2 / OpenID Connect as Mandatory; service has openid-connect but is missing jwt.",
         "verification": {
           "status": "verified",
           "confidence": "high",
@@ -235,7 +235,7 @@
           "JWT Authentication",
           "OAuth2 / OpenID Connect"
         ],
-        "details": "Service has no plugins enabled, missing mandatory GDPR authentication plugins: JWT Authentication and OAuth2 / OpenID Connect per plugin-to-standard mapping.",
+        "details": "Service has no plugins enabled, but GDPR mapping lists JWT Authentication and OAuth2 / OpenID Connect as Mandatory for secure handling of personal data.",
         "verification": {
           "status": "verified",
           "confidence": "high",
@@ -327,13 +327,45 @@
     "serviceName": "MyMetaAIGatewayService",
     "policies": [
       {
+        "policy_name": "Authentication Policy",
+        "comply": true,
+        "missing_plugins": [],
+        "details": "",
+        "verification": {
+          "status": "verified",
+          "confidence": "high",
+          "confidence_basis": "All claims confirmed absent from the inventory and grounded in 4 retrieved policy chunk(s).",
+          "claims": [],
+          "evidence": {
+            "grounded": true,
+            "chunk_count": 4,
+            "chunk_ids": [
+              "embedding:e93d2b0342ac37a9",
+              "embedding:8a485170f218ba1a",
+              "embedding:dc53c4cd7a5ebc92",
+              "embedding:0b35a4b0fad5eaa0"
+            ],
+            "sources": [
+              "01_authentication_policy.txt",
+              "kong_api_security_mapping.md"
+            ],
+            "standards_in_scope": [
+              "GDPR"
+            ]
+          },
+          "notes": [
+            "Compliant verdict claims nothing missing."
+          ]
+        }
+      },
+      {
         "policy_name": "GDPR",
         "comply": false,
         "missing_plugins": [
           "jwt",
           "oauth2"
         ],
-        "details": "GDPR requires JWT Authentication and OAuth2/OpenID Connect as Mandatory per mapping; Authentication Policy v1.0 requires jwt, oauth2, key-auth. Service has key-auth, acl, ai-proxy-advanced but lacks jwt and oauth2, so does not satisfy GDPR authentication requirements.",
+        "details": "Service lacks mandatory JWT Authentication and OAuth2 / OpenID Connect plugins required for GDPR; enabled key-auth, acl, ai-proxy-advanced do not satisfy GDPR authentication requirement.",
         "verification": {
           "status": "verified",
           "confidence": "high",
@@ -418,7 +450,7 @@
     },
     "verification_summary": {
       "status": "verified",
-      "verified": 1,
+      "verified": 2,
       "unverified": 0,
       "contradictory": 0
     }
@@ -433,7 +465,7 @@
           "JWT Authentication",
           "OAuth2 / OpenID Connect"
         ],
-        "details": "No plugins enabled; GDPR requires secure handling of personal data and both JWT Authentication and OAuth2 / OpenID Connect are listed as Mandatory for GDPR.",
+        "details": "Service has no plugins enabled; GDPR requires JWT Authentication and OAuth2 / OpenID Connect (both Mandatory per mapping) for secure handling of personal data.",
         "verification": {
           "status": "verified",
           "confidence": "high",

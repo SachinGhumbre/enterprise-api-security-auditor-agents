@@ -220,11 +220,6 @@ def ingest_knowledge_base():
             return jsonify({
                 "error": f"Embedding failed for {filename}: {exc}",
                 "provider": embeddings.embedding_provider(),
-                "deployment": config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
-                "endpoint": config.AZURE_OPENAI_ENDPOINT,
-                "hint": ("A 404/DeploymentNotFound means AZURE_OPENAI_EMBEDDING_DEPLOYMENT "
-                         "does not name an existing embeddings deployment on this endpoint. "
-                         "Set EMBEDDING_PROVIDER=local to ingest without Azure."),
             }), 500
 
         reindexed = bool(known)
@@ -237,7 +232,7 @@ def ingest_knowledge_base():
                 return jsonify({
                     "error": (f"Embedding dimension mismatch for {filename}: model returned "
                               f"{len(vector)}, VECTOR_DIMENSIONS is {config.VECTOR_DIMENSIONS}."),
-                    "hint": "text-embedding-3-small=1536, text-embedding-3-large=3072.",
+                    "hint": "Set VECTOR_DIMENSIONS in backend/.env to match the embedding length.",
                 }), 500
 
             metadata = {

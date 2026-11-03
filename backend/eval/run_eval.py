@@ -1,17 +1,13 @@
 """
 ===============================================================================
  File Name   : eval/run_eval.py
- Description : Model evaluation runner. Scores Muse Spark 1.3 against the
-               optional fallback (or two deterministic mocks) on representative
-               security-auditing tasks using reproducible judges - never
-               LLM-as-judge, never a bare assertion.
+ Description : Model evaluation runner. Scores Muse Spark 1.3 (or two
+               deterministic mocks) on representative security-auditing
+               tasks using reproducible judges - never LLM-as-judge,
+               never a bare assertion.
 
                    # offline harness check (no keys, no network)
                    python backend/eval/run_eval.py --compare mock:good mock:weak
-
-                   # live comparison (needs META_API_KEY; azure needs its
-                   # endpoint/key/deployment plus META_ONLY=false)
-                   python backend/eval/run_eval.py --compare meta azure
 
                Results print as a table and save to --out JSON. A verdict of
                "better" is only ever stated from these measured numbers, with
@@ -94,23 +90,6 @@ def resolve_target(spec, tasks):
             return response.text, response.usage, model
 
         return f"meta:{model}", call
-    if spec == "azure":
-        if config.META_ONLY:
-            raise SystemExit("azure needs META_ONLY=false in backend/.env")
-        for name in ("AZURE_OPENAI_API_KEY", "AZURE_OPENAI_ENDPOINT",
-                     "AZURE_OPENAI_DEPLOYMENT_NAME"):
-            if not getattr(config, name):
-                raise SystemExit(f"azure needs {name} in backend/.env")
-        model = config.AZURE_OPENAI_DEPLOYMENT_NAME
-
-        def call(task):
-            instance = router.Router()
-            response = instance.run_direct(
-                "azure", model, task["task"], build_messages(task),
-                expect="text", max_tokens=1500)
-            return response.text, response.usage, model
-
-        return f"azure:{model}", call
     if spec in ("mock:good", "mock:weak"):
         key = "ideal" if spec == "mock:good" else "flawed"
         by_id = {t["id"]: t for t in tasks}
@@ -121,7 +100,7 @@ def resolve_target(spec, tasks):
             return text, None, spec
 
         return spec, call
-    raise SystemExit(f"Unknown target '{spec}'. Use meta, azure, mock:good, mock:weak.")
+    raise SystemExit(f"Unknown target '{spec}'. Use meta, mock:good, mock:weak.")
 
 
 def run_suite(label, call, tasks):
@@ -180,7 +159,7 @@ def print_table(report):
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Evaluate providers on audit tasks.")
     parser.add_argument("--compare", nargs="+", default=["mock:good", "mock:weak"],
-                        help="Targets: meta, azure, mock:good, mock:weak.")
+                        help="Targets: meta, mock:good, mock:weak.")
     parser.add_argument("--tasks", default=TASKS_PATH)
     parser.add_argument("--out", default=None)
     args = parser.parse_args(argv)

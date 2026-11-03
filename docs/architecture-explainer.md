@@ -42,7 +42,7 @@ becomes verified. Two: failure honesty — every fallback degrades
 explicitly with a badge and a reason, from stale inventory to model
 outages. Three: least privilege end to end — per-agent tool allowlists,
 API roles, and a write path that defaults to simulation. Four:
-measurement — 378 backend tests, retrieval hit rate 1.0 on a curated
+measurement — 379 backend tests, retrieval hit rate 1.0 on a curated
 set, and a routing table you can inspect live that pins every reasoning
 task to Muse Spark 1.3."
 

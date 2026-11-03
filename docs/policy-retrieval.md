@@ -37,9 +37,9 @@ Missing headers fall back to `vX.Y` regex (version), filename signals
   stamped at ingest. `search()` fails closed on a mismatch with a
   re-ingest pointer; legacy indexes without a record still read.
 
-Index and query always share one embedding configuration
-(`EMBEDDING_PROVIDER`, `VECTOR_DIMENSIONS`); the check above enforces it
-instead of trusting it.
+Index and query always share one embedding configuration (local vectors
+over `VECTOR_DIMENSIONS`); the check above enforces it instead of
+trusting it.
 
 ## Retrieval
 
