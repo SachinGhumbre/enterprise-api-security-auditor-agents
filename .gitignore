@@ -223,3 +223,6 @@ __marimo__/
 *.env
 backend/.env
 
+# Node - never commit installed dependencies
+node_modules/
+
