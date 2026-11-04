@@ -181,26 +181,36 @@ def kong_services():
     except Exception as exc:
         snapshot, freshness = kong_inventory.load_snapshot()
         if snapshot is not None:
+            stale = bool((freshness or {}).get("stale", True))
+            if config.kong_configured():
+                services_warning = (f"Kong Admin API unreachable ({exc}); served the "
+                                    "Redis snapshot instead of live data.")
+            else:
+                services_warning = config.saved_snapshot_note(
+                    snapshot.get("captured_at"), stale)
             return jsonify({
                 "source": "redis_snapshot",
                 "kong_mode": config.resolve_kong_mode(),
                 "live": False,
-                "stale": bool((freshness or {}).get("stale", True)),
+                "stale": stale,
                 "snapshot_at": snapshot.get("captured_at"),
                 "gaps": snapshot.get("gaps", []),
-                "warning": f"Kong Admin API unreachable ({exc}); served the "
-                           "Redis snapshot instead of live data.",
+                "warning": services_warning,
                 "count": len(snapshot["inventory"]),
                 "services": snapshot["inventory"],
             }), 200
         cached = _load_artifact(auditor_agent.FALLBACK_KONG_DATA, [])
+        if config.kong_configured():
+            services_warning = f"Kong Admin API unreachable: {exc}"
+        else:
+            services_warning = config.sample_inventory_note(len(cached))
         return jsonify({
             "source": "cached_file",
             "live": False,
             "stale": True,
             "snapshot_at": None,
             "gaps": [],
-            "warning": f"Kong Admin API unreachable: {exc}",
+            "warning": services_warning,
             "count": len(cached),
             "services": cached,
         }), 200

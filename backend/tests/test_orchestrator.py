@@ -1458,7 +1458,11 @@ def test_discovery_flags_stale_snapshot(stub_env):
     assert any("stale: True" in w for w in updates["warnings"])
 
 
-def test_discovery_falls_back_to_file_without_snapshot(stub_env):
+def test_discovery_falls_back_to_file_without_snapshot(stub_env, monkeypatch):
+    from common import config as _config
+    monkeypatch.setattr(_config, "KONG_ADMIN_API", "https://kong.example")
+    monkeypatch.setattr(_config, "KONG_ADMIN_TOKEN", "tok")
+
     def boom(**kwargs):
         raise RuntimeError("connection refused")
 
@@ -1649,3 +1653,49 @@ def test_threat_model_survives_elaboration_failure(stub_env):
     decisions = updates["agents"]["threat_model"]["decisions"]
     assert any(d["decision"] == "elaboration_skipped" for d in decisions)
     assert updates["agents"]["threat_model"]["status"] == "ok"
+
+def test_discovery_sample_note_when_kong_unconfigured(stub_env, monkeypatch):
+    from common import config as _config
+    monkeypatch.setattr(_config, "KONG_ADMIN_API", None)
+    monkeypatch.setattr(_config, "KONG_ADMIN_TOKEN", None)
+
+    def boom(**kwargs):
+        raise RuntimeError("KONG_ADMIN_API is not set")
+
+    def no_snapshot(**kwargs):
+        raise RuntimeError("no snapshot")
+
+    stub_env.setitem(tools.TOOL_DEFS, "kong_inventory",
+                     {"fn": boom, "uses_llm": False})
+    stub_env.setitem(tools.TOOL_DEFS, "kong_snapshot_load",
+                     {"fn": no_snapshot, "uses_llm": False})
+    stub_env.setitem(tools.TOOL_DEFS, "kong_fallback",
+                     {"fn": lambda **k: [dict(s) for s in INVENTORY],
+                      "uses_llm": False})
+    updates = orchestrator.discovery({"service_names": None, "top_k": 4,
+                                      "budgets": {}, "max_retries": 0})
+    assert updates["kong_source"] == "cached_file"
+    assert any(w.startswith("Sample inventory:") for w in updates["warnings"])
+    assert not any("unreachable" in w for w in updates["warnings"])
+
+
+def test_discovery_saved_snapshot_note_when_kong_unconfigured(stub_env, monkeypatch):
+    from common import config as _config
+    monkeypatch.setattr(_config, "KONG_ADMIN_API", None)
+    monkeypatch.setattr(_config, "KONG_ADMIN_TOKEN", None)
+
+    def boom(**kwargs):
+        raise RuntimeError("KONG_ADMIN_API is not set")
+
+    snapshot = {"captured_at": "2026-01-01T00:00:00+00:00",
+                "inventory": [dict(s) for s in INVENTORY], "gaps": []}
+    stub_env.setitem(tools.TOOL_DEFS, "kong_inventory",
+                     {"fn": boom, "uses_llm": False})
+    stub_env.setitem(tools.TOOL_DEFS, "kong_snapshot_load",
+                     {"fn": lambda **k: {"snapshot": snapshot,
+                                         "freshness": {"stale": True}},
+                      "uses_llm": False})
+    updates = orchestrator.discovery({"service_names": None, "top_k": 4,
+                                      "budgets": {}, "max_retries": 0})
+    assert updates["kong_source"] == "redis_snapshot"
+    assert any(w.startswith("Saved snapshot:") for w in updates["warnings"])

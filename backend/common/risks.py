@@ -156,14 +156,14 @@ def merge_group(key, sources):
     """Merge duplicate findings into one register entry shell. Severity takes
     the max with conflicts noted; confidence takes the best-supported claim."""
     service, topic = key
-    severities = [s.get("severity", "Medium") for _, s in sources]
+    severities = [(s.get("severity") or "Medium") for _, s in sources]
     top_severity = max(severities, key=lambda s: SEVERITY_RANK.get(s, 2))
     conflicts = []
     if len(set(severities)) > 1:
         conflicts.append(f"severity conflict {sorted(set(severities))}; "
                          f"kept highest ({top_severity})")
-    confidences = [(s.get("verification") or {}).get("confidence", "low")
-                   if "verification" in s else s.get("confidence", "low")
+    confidences = [((s.get("verification") or {}).get("confidence") or "low")
+                   if "verification" in s else (s.get("confidence") or "low")
                    for _, s in sources]
     top_confidence = max(confidences, key=lambda c: CONFIDENCE_RANK.get(c, 1))
     tiers = [s.get("tier", "unverified") for _, s in sources]

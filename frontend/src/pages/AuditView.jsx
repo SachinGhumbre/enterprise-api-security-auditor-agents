@@ -34,6 +34,12 @@ export const SECURITY_STANDARDS = [
   'SOC 2',
 ];
 
+// The backend prefixes deliberate no-Kong notes with "Sample inventory:" —
+// those render as info (expected demo path), everything else stays a warning.
+function isSampleNote(text) {
+  return (text || '').startsWith('Sample inventory:');
+}
+
 export default function AuditView({ notify, auditReport, setAuditReport, onGoToRemediation }) {
   const [selected, setSelected] = useState(['OWASP API Top 10', 'GDPR']);
   const [running, setRunning] = useState(false);
@@ -156,7 +162,7 @@ export default function AuditView({ notify, auditReport, setAuditReport, onGoToR
 
       {error ? <Banner tone="error" title="Audit failed">{error}</Banner> : null}
       {warnings.map((w) => (
-        <Banner key={w} tone="warn" title="Degraded input">{w}</Banner>
+        <Banner key={w} tone={isSampleNote(w) ? 'info' : 'warn'} title={isSampleNote(w) ? 'Sample inventory' : 'Degraded input'}>{w}</Banner>
       ))}
 
       <Card
@@ -173,7 +179,7 @@ export default function AuditView({ notify, auditReport, setAuditReport, onGoToR
         }
       >
         {inventory && inventory.warning ? (
-          <Banner tone="warn" title="Using cached inventory">{inventory.warning}</Banner>
+          <Banner tone={isSampleNote(inventory.warning) ? 'info' : 'warn'} title={isSampleNote(inventory.warning) ? 'Sample inventory' : 'Using cached inventory'}>{inventory.warning}</Banner>
         ) : null}
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {(inventory?.services || []).map((s) => (

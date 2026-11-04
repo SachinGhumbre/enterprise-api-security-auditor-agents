@@ -238,10 +238,6 @@ def perceive_kong(state: Dict[str, Any]) -> Dict[str, Any]:
         _write_artifact(KONG_DATA_FILE, inventory)
     except Exception as exc:
         print(f"[AuditAgent] Perceive: Kong Admin API unavailable ({exc}); using cached inventory")
-        state["kong_warning"] = (
-            f"Kong Admin API unreachable ({exc}). Audited the cached inventory from "
-            f"{os.path.basename(FALLBACK_KONG_DATA)} instead of live configuration."
-        )
         try:
             with open(FALLBACK_KONG_DATA, "r", encoding="utf-8") as handle:
                 cached = json.load(handle)
@@ -255,9 +251,19 @@ def perceive_kong(state: Dict[str, Any]) -> Dict[str, Any]:
                           if str(s.get("service_name", "")).lower() in names]
             state["kong_data"] = cached
             state["kong_source"] = "cached_file"
+            if config.kong_configured():
+                state["kong_warning"] = (
+                    f"Kong Admin API unreachable ({exc}). Audited the cached inventory from "
+                    f"{os.path.basename(FALLBACK_KONG_DATA)} instead of live configuration."
+                )
+            else:
+                state["kong_warning"] = config.sample_inventory_note(len(cached))
         except Exception as inner:
             state["kong_data"] = []
             state["kong_source"] = "none"
+            state["kong_warning"] = (
+                state.get("kong_warning")
+                or f"Kong Admin API unreachable ({exc}). No inventory available.")
             state["kong_warning"] += f" Cached inventory also unavailable ({inner})."
 
     return state

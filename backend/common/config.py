@@ -130,6 +130,34 @@ def kong_is_konnect():
     return resolve_kong_mode() == "konnect"
 
 
+def kong_configured():
+    """True when a Kong Admin API could be reached (URL and token both set).
+
+    Fallback messaging branches on this: an unconfigured Kong is the
+    expected no-gateway demo path (INFO-style sample note), while a
+    configured-but-unreachable Kong is a genuine outage (warning).
+    """
+    return bool(KONG_ADMIN_API and KONG_ADMIN_TOKEN)
+
+
+def sample_inventory_note(count):
+    """Shared INFO note for deliberate no-Kong runs. Every fallback site uses
+    this text; the 'Sample inventory:' prefix is the dashboard's signal to
+    render an info banner instead of a warning."""
+    return (
+        "Sample inventory: no Kong Admin API configured \u2014 auditing the bundled "
+        f"sample API inventory ({count} service{'s' * (count != 1)}) instead of a live estate. "
+        "Set KONG_ADMIN_API and KONG_ADMIN_TOKEN in .env to audit live.")
+
+
+def saved_snapshot_note(snapshot_at, stale):
+    """Shared note for serving a saved snapshot with no Kong configured."""
+    return (
+        "Saved snapshot: no Kong Admin API configured \u2014 served the last saved "
+        f"snapshot (captured at {snapshot_at}, stale: {stale}) instead of live "
+        "data. Set KONG_ADMIN_API and KONG_ADMIN_TOKEN in .env to audit live.")
+
+
 # Konnect serves a valid public certificate, so verification should stay on.
 # Self-managed admin APIs are usually fronted by a self-signed cert in a lab.
 _verify_raw = get("KONG_ADMIN_VERIFY_SSL")

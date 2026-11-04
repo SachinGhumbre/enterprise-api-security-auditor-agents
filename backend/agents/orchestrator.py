@@ -374,17 +374,25 @@ def _discovery_fn(state, gateway: ToolGateway, record):
             kong_stale = bool((cached.get("freshness") or {}).get("stale",
                                                                   True))
             snapshot_at = snapshot.get("captured_at")
-            warnings.append(
-                f"Kong Admin API unreachable ({exc}); used Redis snapshot "
-                f"captured at {snapshot_at} (stale: {kong_stale}).")
+            if config.kong_configured():
+                warnings.append(
+                    f"Kong Admin API unreachable ({exc}); used Redis snapshot "
+                    f"captured at {snapshot_at} (stale: {kong_stale}).")
+            else:
+                warnings.append(
+                    config.saved_snapshot_note(snapshot_at, kong_stale))
         except ToolError:
             kong_data = gateway.call("kong_fallback")
             kong_source = "cached_file"
             kong_live, kong_stale = False, True
             snapshot_at = None
-            warnings.append(f"Kong Admin API unreachable ({exc}); no Redis "
-                            "snapshot; used cached file inventory of unknown "
-                            "age (treated as stale).")
+            if config.kong_configured():
+                warnings.append(f"Kong Admin API unreachable ({exc}); no Redis "
+                                "snapshot; used cached file inventory of unknown "
+                                "age (treated as stale).")
+            else:
+                warnings.append(
+                    config.sample_inventory_note(len(kong_data)))
         record["decisions"].append({"decision": "inventory_source",
                                     "source": kong_source, "live": kong_live,
                                     "stale": kong_stale,
@@ -405,7 +413,11 @@ def _discovery_fn(state, gateway: ToolGateway, record):
         record["decisions"].append({"decision": "consumers_inventoried",
                                     "count": len(kong_consumers)})
     except ToolError as exc:
-        warnings.append(f"Consumer inventory unavailable: {exc}")
+        if config.kong_configured():
+            warnings.append(f"Consumer inventory unavailable: {exc}")
+        else:
+            warnings.append("Consumer inventory skipped: no Kong Admin API "
+                            "configured (the sample inventory has no consumers).")
         record["decisions"].append({"decision": "consumers_skipped",
                                     "reason": str(exc)[:200]})
         capabilities["consumers"] = False
@@ -459,9 +471,14 @@ def _discovery_fn(state, gateway: ToolGateway, record):
     if not kong_data:
         updates["_degraded"] = "Discovery found no services to assess."
     elif not kong_live:
-        updates["_degraded"] = (
-            f"Inventory source is {kong_source} (stale: {kong_stale}); "
-            "this is not a live assessment.")
+        if kong_source == "cached_file" and not config.kong_configured():
+            updates["_degraded"] = (
+                "Inventory source is cached_file; auditing the bundled sample "
+                "APIs \u2014 this is not a live assessment.")
+        else:
+            updates["_degraded"] = (
+                f"Inventory source is {kong_source} (stale: {kong_stale}); "
+                "this is not a live assessment.")
     elif retrieved == 0:
         updates["_degraded"] = "No policy evidence retrieved; findings will be quarantined."
     return updates

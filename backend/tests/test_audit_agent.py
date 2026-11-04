@@ -13,7 +13,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agents import auditor_agent  # noqa: E402
-from common import llm, router, vector_store  # noqa: E402
+from common import config, llm, router, vector_store  # noqa: E402
 
 def _routed(parsed, raw=""):
     return router.ModelResponse(provider="meta", model="muse-spark-1.3",
@@ -83,6 +83,9 @@ def test_perceive_uses_request_payload():
 
 
 def test_perceive_falls_back_when_kong_unreachable(monkeypatch):
+    monkeypatch.setattr(config, "KONG_ADMIN_API", "https://kong.example")
+    monkeypatch.setattr(config, "KONG_ADMIN_TOKEN", "tok")
+
     def boom(*args, **kwargs):
         raise RuntimeError("connection refused")
 
@@ -198,3 +201,28 @@ def test_audit_graph_runs_end_to_end(monkeypatch, stub_rag, isolate_artifacts):
 
     assert result["summary"]["services_audited"] == 1
     assert os.path.exists(auditor_agent.AUDIT_REPORT_FILE)
+
+def test_perceive_sample_note_when_kong_unconfigured(monkeypatch, tmp_path):
+    """No Kong credentials is the expected demo path: INFO-style sample note."""
+    monkeypatch.setattr(config, "KONG_ADMIN_API", None)
+    monkeypatch.setattr(config, "KONG_ADMIN_TOKEN", None)
+    cached = [
+        {"service_name": "Alpha", "service_id": "a",
+         "service_plugins": []},
+        {"service_name": "Beta", "service_id": "b",
+         "service_plugins": []},
+    ]
+    fallback = tmp_path / "filtered_kong_data.json"
+    fallback.write_text(json.dumps(cached), encoding="utf-8")
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("KONG_ADMIN_API is not set")
+
+    monkeypatch.setattr(auditor_agent, "collect_kong_inventory", boom)
+    monkeypatch.setattr(auditor_agent, "FALLBACK_KONG_DATA", str(fallback))
+
+    state = auditor_agent.perceive_kong({})
+    assert state["kong_source"] == "cached_file"
+    assert state["kong_warning"].startswith("Sample inventory:")
+    assert "(2 services)" in state["kong_warning"]
+    assert "unreachable" not in state["kong_warning"]

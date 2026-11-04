@@ -139,3 +139,13 @@ def test_capability_correlation_and_control_links():
     assert by_id["R-shop-api-authentication"]["correlated_entries"] == [
         "R-shop-admin-authentication"]
     assert by_id["R-shop-api-authentication"]["linked_controls"] == ["OWASP-API2"]
+
+def test_merge_group_tolerates_null_severity_and_confidence():
+    """Explicit nulls (LLM emitted `"severity": null`) must not crash the
+    conflict sort when merged with a labelled finding."""
+    nulls = _llm("f1", severity=None, confidence=None)
+    labelled = _llm("f2", severity="High", confidence="high")
+    entry = risks.merge_group(("shop-api", "authentication"),
+                              [("llm", nulls), ("llm", labelled)])
+    assert entry["severity"] == "High"
+    assert entry["confidence"] == "high"
