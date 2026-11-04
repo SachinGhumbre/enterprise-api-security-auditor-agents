@@ -1,0 +1,25 @@
+{
+  "assessment_id": "asm-196ba30c27c3",
+  "actions": 2,
+  "by_severity": {
+    "Medium": 2
+  },
+  "risk": {},
+  "validation_passed": true,
+  "change_proposals": 0,
+  "excluded": [],
+  "degraded_reasons": [
+    "discovery degraded: Inventory source is cached_file (stale: True); this is not a live assessment.",
+    "risk failed: TypeError: '<' not supported between instances of 'NoneType' and 'str'"
+  ],
+  "objective": "Full API security assessment",
+  "tiers": {},
+  "coverage_totals": {
+    "total": 54,
+    "satisfied": 0,
+    "partial": 3,
+    "unsatisfied": 29,
+    "not_evaluable": 22
+  },
+  "note": "Approval authorises export of this plan. Nothing is applied to Kong by this workflow."
+}

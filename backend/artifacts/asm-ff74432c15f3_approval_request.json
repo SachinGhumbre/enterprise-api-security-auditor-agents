@@ -1,0 +1,25 @@
+{
+  "assessment_id": "asm-ff74432c15f3",
+  "actions": 1,
+  "by_severity": {
+    "Medium": 1
+  },
+  "risk": {},
+  "validation_passed": true,
+  "change_proposals": 0,
+  "excluded": [],
+  "degraded_reasons": [
+    "discovery degraded: Inventory source is redis_snapshot (stale: False); this is not a live assessment.",
+    "risk failed: TypeError: '<' not supported between instances of 'NoneType' and 'str'"
+  ],
+  "objective": "Full API security assessment",
+  "tiers": {},
+  "coverage_totals": {
+    "total": 27,
+    "satisfied": 1,
+    "partial": 0,
+    "unsatisfied": 15,
+    "not_evaluable": 11
+  },
+  "note": "Approval authorises export of this plan. Nothing is applied to Kong by this workflow."
+}

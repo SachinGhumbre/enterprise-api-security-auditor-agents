@@ -35,7 +35,7 @@ First boot auto-ingests the policy corpus; watch `docker compose logs -f`.
 
 ```powershell
 # 1. Redis Stack
-docker compose -f backend\docker-compose.yaml up -d
+docker compose -f backend\docker-compose_redis.yaml up -d
 
 # 2. Python env
 cd backend

@@ -1,63 +1,13 @@
 {
-  "orders-api:policy:orders-api": {
-    "serviceName": "orders-api",
-    "policies": [
-      {
-        "policy_name": "GDPR",
-        "comply": false,
-        "missing_plugins": [
-          "JWT Authentication",
-          "OAuth2 / OpenID Connect"
-        ],
-        "details": "Enabled plugin ai-mcp-proxy does not satisfy GDPR requirements; mapping table marks JWT Authentication and OAuth2 / OpenID Connect as Mandatory for GDPR.",
-        "verification": {
-          "status": "verified",
-          "confidence": "high",
-          "confidence_basis": "All claims confirmed absent from the inventory and grounded in 4 retrieved policy chunk(s).",
-          "claims": [
-            {
-              "claimed": "JWT Authentication",
-              "canonical": "jwt",
-              "result": "verified_missing",
-              "note": "'jwt' is not enabled on the service."
-            },
-            {
-              "claimed": "OAuth2 / OpenID Connect",
-              "candidates": [
-                "oauth2",
-                "openid-connect"
-              ],
-              "enabled_candidates": [],
-              "result": "verified_missing",
-              "note": "None of oauth2, openid-connect ('OAuth2 / OpenID Connect') is enabled."
-            }
-          ],
-          "evidence": {
-            "grounded": true,
-            "chunk_count": 4,
-            "chunk_ids": [
-              "embedding:e93d2b0342ac37a9",
-              "embedding:8a485170f218ba1a",
-              "embedding:0b35a4b0fad5eaa0",
-              "embedding:04543137e3e17b97"
-            ],
-            "sources": [
-              "kong_api_security_mapping.md"
-            ],
-            "standards_in_scope": [
-              "GDPR"
-            ]
-          },
-          "notes": []
-        }
-      }
-    ],
+  "HealthService:policy:HealthService": {
+    "serviceName": "HealthService",
     "service_plugins": [
-      "ai-mcp-proxy"
+      "request-transformer",
+      "key-auth"
     ],
-    "policy_sources": [
-      "kong_api_security_mapping.md"
-    ],
+    "policies": [],
+    "error": "Model did not return parsable JSON.",
+    "raw_response": "",
     "policy_evidence": {
       "grounded": true,
       "chunk_count": 4,
@@ -65,82 +15,48 @@
         {
           "id": "embedding:e93d2b0342ac37a9",
           "source": "kong_api_security_mapping.md",
-          "score": 0.4142,
+          "score": 0.3703,
           "excerpt": "7001\nInternational standard for information security management systems. Emphasizes risk management, access control, and continuous improvement.\n\n### OWASP API Security Top 10\nCommunity-driven list of top API security risks including broken authentication, excessive data exposure",
-          "truncated": true
-        },
-        {
-          "id": "embedding:8a485170f218ba1a",
-          "source": "kong_api_security_mapping.md",
-          "score": 0.3614,
-          "excerpt": "# Kong Gateway Plugins vs API Security Standards\n\n| Plugin Name                 | Category           | Description                                        | GDPR      | HIPAA     | PCI-DSS   | ISO 27001   | OWASP API Top 10   | PSD2/SCA   | PIPEDA    | NIST      | SOC 2     |\n|:--",
           "truncated": true
         },
         {
           "id": "embedding:0b35a4b0fad5eaa0",
           "source": "kong_api_security_mapping.md",
-          "score": 0.322,
+          "score": 0.3416,
           "excerpt": "ontent                 | Optional  | Optional  | Optional  | Optional    | Optional           | Optional   | Optional  | Optional  | Optional  |\n\n\n## API Security Standards Overview\n\n### GDPR (General Data Protection Regulation)\nEuropean Union regulation focused on data protectio",
           "truncated": true
         },
         {
-          "id": "embedding:04543137e3e17b97",
+          "id": "embedding:8a485170f218ba1a",
           "source": "kong_api_security_mapping.md",
-          "score": 0.294,
-          "excerpt": "r API security. Emphasizes Zero Trust, DevSecOps, and lifecycle protection.\n\n### SOC 2\nUS standard for managing customer data based on five trust principles: security, availability, processing integrity, confidentiality, and privacy.",
-          "truncated": false
+          "score": 0.3275,
+          "excerpt": "# Kong Gateway Plugins vs API Security Standards\n\n| Plugin Name                 | Category           | Description                                        | GDPR      | HIPAA     | PCI-DSS   | ISO 27001   | OWASP API Top 10   | PSD2/SCA   | PIPEDA    | NIST      | SOC 2     |\n|:--",
+          "truncated": true
+        },
+        {
+          "id": "embedding:dc53c4cd7a5ebc92",
+          "source": "01_authentication_policy.txt",
+          "score": 0.3092,
+          "excerpt": "Policy-Name: Authentication Policy\nPolicy-Version: 1.0\nEffective-Date: 2025-01-15\nCategory: authentication\nApplies-To: all\n\nPolicy Name: Authentication Policy v1.0\nDescription: This policy outlines the authentication mechanisms supported by Kong Gateway to ensure secure access to",
+          "truncated": true
         }
       ]
     },
     "verification_summary": {
-      "status": "verified",
-      "verified": 1,
-      "unverified": 0,
-      "contradictory": 0
+      "status": "unverified",
+      "reason": "The audit produced no policies for this service."
     }
   },
-  "AM_FCA_SF:policy:AM_FCA_SF": {
-    "serviceName": "AM_FCA_SF",
+  "KongTest:policy:KongTest": {
+    "serviceName": "KongTest",
     "policies": [
       {
-        "policy_name": "Rate Limiting & Spike Arrest Policy",
-        "comply": true,
-        "missing_plugins": [],
-        "details": "",
-        "verification": {
-          "status": "verified",
-          "confidence": "high",
-          "confidence_basis": "All claims confirmed absent from the inventory and grounded in 4 retrieved policy chunk(s).",
-          "claims": [],
-          "evidence": {
-            "grounded": true,
-            "chunk_count": 4,
-            "chunk_ids": [
-              "embedding:6d62b3d8b8cf524f",
-              "embedding:e93d2b0342ac37a9",
-              "embedding:0b35a4b0fad5eaa0",
-              "embedding:8a485170f218ba1a"
-            ],
-            "sources": [
-              "03_rate_limiting.txt",
-              "kong_api_security_mapping.md"
-            ],
-            "standards_in_scope": [
-              "GDPR"
-            ]
-          },
-          "notes": [
-            "Compliant verdict claims nothing missing."
-          ]
-        }
-      },
-      {
-        "policy_name": "GDPR",
+        "policy_name": "Authentication Policy",
         "comply": false,
         "missing_plugins": [
           "jwt"
         ],
-        "details": "GDPR requires JWT Authentication as Mandatory and OAuth2 / OpenID Connect as Mandatory; service has openid-connect but is missing jwt.",
+        "details": "Mandatory plugins per Authentication Policy v1.0 are jwt, oauth2, key-auth, with GDPR mapping marking JWT Authentication as Mandatory. Service has oauth2 and key-auth but lacks jwt; basic-auth does not satisfy jwt requirement.",
         "verification": {
           "status": "verified",
           "confidence": "high",
@@ -157,12 +73,13 @@
             "grounded": true,
             "chunk_count": 4,
             "chunk_ids": [
+              "embedding:dc53c4cd7a5ebc92",
               "embedding:6d62b3d8b8cf524f",
               "embedding:e93d2b0342ac37a9",
-              "embedding:0b35a4b0fad5eaa0",
               "embedding:8a485170f218ba1a"
             ],
             "sources": [
+              "01_authentication_policy.txt",
               "03_rate_limiting.txt",
               "kong_api_security_mapping.md"
             ],
@@ -172,15 +89,51 @@
           },
           "notes": []
         }
+      },
+      {
+        "policy_name": "Rate Limiting & Spike Arrest Policy",
+        "comply": true,
+        "missing_plugins": [],
+        "details": "",
+        "verification": {
+          "status": "verified",
+          "confidence": "high",
+          "confidence_basis": "All claims confirmed absent from the inventory and grounded in 4 retrieved policy chunk(s).",
+          "claims": [],
+          "evidence": {
+            "grounded": true,
+            "chunk_count": 4,
+            "chunk_ids": [
+              "embedding:dc53c4cd7a5ebc92",
+              "embedding:6d62b3d8b8cf524f",
+              "embedding:e93d2b0342ac37a9",
+              "embedding:8a485170f218ba1a"
+            ],
+            "sources": [
+              "01_authentication_policy.txt",
+              "03_rate_limiting.txt",
+              "kong_api_security_mapping.md"
+            ],
+            "standards_in_scope": [
+              "GDPR"
+            ]
+          },
+          "notes": [
+            "Compliant verdict claims nothing missing."
+          ]
+        }
       }
     ],
     "service_plugins": [
-      "ip-restriction",
-      "openid-connect",
+      "basic-auth",
+      "oauth2",
+      "key-auth",
+      "request-transformer",
       "rate-limiting",
-      "request-transformer"
+      "ip-restriction"
     ],
     "policy_sources": [
+      "01_authentication_policy.txt",
       "03_rate_limiting.txt",
       "kong_api_security_mapping.md"
     ],
@@ -189,30 +142,30 @@
       "chunk_count": 4,
       "chunks": [
         {
+          "id": "embedding:dc53c4cd7a5ebc92",
+          "source": "01_authentication_policy.txt",
+          "score": 0.3609,
+          "excerpt": "Policy-Name: Authentication Policy\nPolicy-Version: 1.0\nEffective-Date: 2025-01-15\nCategory: authentication\nApplies-To: all\n\nPolicy Name: Authentication Policy v1.0\nDescription: This policy outlines the authentication mechanisms supported by Kong Gateway to ensure secure access to",
+          "truncated": true
+        },
+        {
           "id": "embedding:6d62b3d8b8cf524f",
           "source": "03_rate_limiting.txt",
-          "score": 0.3753,
+          "score": 0.3491,
           "excerpt": "Policy-Name: Rate Limiting & Spike Arrest Policy\nPolicy-Version: 1.0\nEffective-Date: 2025-02-01\nCategory: rate_limiting\nApplies-To: all\n\nPolicy Name: Rate Limiting & Spike Arrest Policy v1.0\nMandatory Plugins to Comply to this policy: rate-limiting\nDescription: This policy define",
           "truncated": true
         },
         {
           "id": "embedding:e93d2b0342ac37a9",
           "source": "kong_api_security_mapping.md",
-          "score": 0.3349,
+          "score": 0.3265,
           "excerpt": "7001\nInternational standard for information security management systems. Emphasizes risk management, access control, and continuous improvement.\n\n### OWASP API Security Top 10\nCommunity-driven list of top API security risks including broken authentication, excessive data exposure",
-          "truncated": true
-        },
-        {
-          "id": "embedding:0b35a4b0fad5eaa0",
-          "source": "kong_api_security_mapping.md",
-          "score": 0.2802,
-          "excerpt": "ontent                 | Optional  | Optional  | Optional  | Optional    | Optional           | Optional   | Optional  | Optional  | Optional  |\n\n\n## API Security Standards Overview\n\n### GDPR (General Data Protection Regulation)\nEuropean Union regulation focused on data protectio",
           "truncated": true
         },
         {
           "id": "embedding:8a485170f218ba1a",
           "source": "kong_api_security_mapping.md",
-          "score": 0.2751,
+          "score": 0.3063,
           "excerpt": "# Kong Gateway Plugins vs API Security Standards\n\n| Plugin Name                 | Category           | Description                                        | GDPR      | HIPAA     | PCI-DSS   | ISO 27001   | OWASP API Top 10   | PSD2/SCA   | PIPEDA    | NIST      | SOC 2     |\n|:--",
           "truncated": true
         }
@@ -225,8 +178,8 @@
       "contradictory": 0
     }
   },
-  "Healthcheck:policy:Healthcheck": {
-    "serviceName": "Healthcheck",
+  "payments-api:policy:payments-api": {
+    "serviceName": "payments-api",
     "policies": [
       {
         "policy_name": "GDPR",
@@ -235,7 +188,7 @@
           "JWT Authentication",
           "OAuth2 / OpenID Connect"
         ],
-        "details": "Service has no plugins enabled, but GDPR mapping lists JWT Authentication and OAuth2 / OpenID Connect as Mandatory for secure handling of personal data.",
+        "details": "Service has no plugins enabled, missing Mandatory GDPR plugins JWT Authentication and OAuth2 / OpenID Connect per Kong Gateway Plugins vs API Security Standards mapping.",
         "verification": {
           "status": "verified",
           "confidence": "high",
@@ -263,8 +216,8 @@
             "chunk_count": 4,
             "chunk_ids": [
               "embedding:e93d2b0342ac37a9",
-              "embedding:0b35a4b0fad5eaa0",
               "embedding:8a485170f218ba1a",
+              "embedding:0b35a4b0fad5eaa0",
               "embedding:04543137e3e17b97"
             ],
             "sources": [
@@ -289,28 +242,28 @@
         {
           "id": "embedding:e93d2b0342ac37a9",
           "source": "kong_api_security_mapping.md",
-          "score": 0.3995,
+          "score": 0.4731,
           "excerpt": "7001\nInternational standard for information security management systems. Emphasizes risk management, access control, and continuous improvement.\n\n### OWASP API Security Top 10\nCommunity-driven list of top API security risks including broken authentication, excessive data exposure",
-          "truncated": true
-        },
-        {
-          "id": "embedding:0b35a4b0fad5eaa0",
-          "source": "kong_api_security_mapping.md",
-          "score": 0.3606,
-          "excerpt": "ontent                 | Optional  | Optional  | Optional  | Optional    | Optional           | Optional   | Optional  | Optional  | Optional  |\n\n\n## API Security Standards Overview\n\n### GDPR (General Data Protection Regulation)\nEuropean Union regulation focused on data protectio",
           "truncated": true
         },
         {
           "id": "embedding:8a485170f218ba1a",
           "source": "kong_api_security_mapping.md",
-          "score": 0.3391,
+          "score": 0.3988,
           "excerpt": "# Kong Gateway Plugins vs API Security Standards\n\n| Plugin Name                 | Category           | Description                                        | GDPR      | HIPAA     | PCI-DSS   | ISO 27001   | OWASP API Top 10   | PSD2/SCA   | PIPEDA    | NIST      | SOC 2     |\n|:--",
+          "truncated": true
+        },
+        {
+          "id": "embedding:0b35a4b0fad5eaa0",
+          "source": "kong_api_security_mapping.md",
+          "score": 0.3607,
+          "excerpt": "ontent                 | Optional  | Optional  | Optional  | Optional    | Optional           | Optional   | Optional  | Optional  | Optional  |\n\n\n## API Security Standards Overview\n\n### GDPR (General Data Protection Regulation)\nEuropean Union regulation focused on data protectio",
           "truncated": true
         },
         {
           "id": "embedding:04543137e3e17b97",
           "source": "kong_api_security_mapping.md",
-          "score": 0.2932,
+          "score": 0.3391,
           "excerpt": "r API security. Emphasizes Zero Trust, DevSecOps, and lifecycle protection.\n\n### SOC 2\nUS standard for managing customer data based on five trust principles: security, availability, processing integrity, confidentiality, and privacy.",
           "truncated": false
         }
@@ -323,49 +276,17 @@
       "contradictory": 0
     }
   },
-  "MyMetaAIGatewayService:policy:MyMetaAIGatewayService": {
-    "serviceName": "MyMetaAIGatewayService",
+  "orders-api:policy:orders-api": {
+    "serviceName": "orders-api",
     "policies": [
       {
         "policy_name": "Authentication Policy",
-        "comply": true,
-        "missing_plugins": [],
-        "details": "",
-        "verification": {
-          "status": "verified",
-          "confidence": "high",
-          "confidence_basis": "All claims confirmed absent from the inventory and grounded in 4 retrieved policy chunk(s).",
-          "claims": [],
-          "evidence": {
-            "grounded": true,
-            "chunk_count": 4,
-            "chunk_ids": [
-              "embedding:e93d2b0342ac37a9",
-              "embedding:8a485170f218ba1a",
-              "embedding:dc53c4cd7a5ebc92",
-              "embedding:0b35a4b0fad5eaa0"
-            ],
-            "sources": [
-              "01_authentication_policy.txt",
-              "kong_api_security_mapping.md"
-            ],
-            "standards_in_scope": [
-              "GDPR"
-            ]
-          },
-          "notes": [
-            "Compliant verdict claims nothing missing."
-          ]
-        }
-      },
-      {
-        "policy_name": "GDPR",
         "comply": false,
         "missing_plugins": [
           "jwt",
           "oauth2"
         ],
-        "details": "Service lacks mandatory JWT Authentication and OAuth2 / OpenID Connect plugins required for GDPR; enabled key-auth, acl, ai-proxy-advanced do not satisfy GDPR authentication requirement.",
+        "details": "Service enables only key-auth; Authentication Policy v1.0 requires jwt and oauth2, and GDPR mapping marks JWT Authentication and OAuth2 as Mandatory for GDPR.",
         "verification": {
           "status": "verified",
           "confidence": "high",
@@ -406,8 +327,6 @@
       }
     ],
     "service_plugins": [
-      "acl",
-      "ai-proxy-advanced",
       "key-auth"
     ],
     "policy_sources": [
@@ -421,28 +340,28 @@
         {
           "id": "embedding:e93d2b0342ac37a9",
           "source": "kong_api_security_mapping.md",
-          "score": 0.3381,
+          "score": 0.4417,
           "excerpt": "7001\nInternational standard for information security management systems. Emphasizes risk management, access control, and continuous improvement.\n\n### OWASP API Security Top 10\nCommunity-driven list of top API security risks including broken authentication, excessive data exposure",
           "truncated": true
         },
         {
           "id": "embedding:8a485170f218ba1a",
           "source": "kong_api_security_mapping.md",
-          "score": 0.3113,
+          "score": 0.4025,
           "excerpt": "# Kong Gateway Plugins vs API Security Standards\n\n| Plugin Name                 | Category           | Description                                        | GDPR      | HIPAA     | PCI-DSS   | ISO 27001   | OWASP API Top 10   | PSD2/SCA   | PIPEDA    | NIST      | SOC 2     |\n|:--",
           "truncated": true
         },
         {
           "id": "embedding:dc53c4cd7a5ebc92",
           "source": "01_authentication_policy.txt",
-          "score": 0.301,
+          "score": 0.384,
           "excerpt": "Policy-Name: Authentication Policy\nPolicy-Version: 1.0\nEffective-Date: 2025-01-15\nCategory: authentication\nApplies-To: all\n\nPolicy Name: Authentication Policy v1.0\nDescription: This policy outlines the authentication mechanisms supported by Kong Gateway to ensure secure access to",
           "truncated": true
         },
         {
           "id": "embedding:0b35a4b0fad5eaa0",
           "source": "kong_api_security_mapping.md",
-          "score": 0.2968,
+          "score": 0.3379,
           "excerpt": "ontent                 | Optional  | Optional  | Optional  | Optional    | Optional           | Optional   | Optional  | Optional  | Optional  |\n\n\n## API Security Standards Overview\n\n### GDPR (General Data Protection Regulation)\nEuropean Union regulation focused on data protectio",
           "truncated": true
         }
@@ -450,13 +369,62 @@
     },
     "verification_summary": {
       "status": "verified",
-      "verified": 2,
+      "verified": 1,
       "unverified": 0,
       "contradictory": 0
     }
   },
-  "new-service-20260525181340158:policy:new-service-20260525181340158": {
-    "serviceName": "new-service-20260525181340158",
+  "customer-portal:policy:customer-portal": {
+    "serviceName": "customer-portal",
+    "service_plugins": [
+      "oauth2",
+      "rate-limiting",
+      "ip-restriction"
+    ],
+    "policies": [],
+    "error": "Model did not return parsable JSON.",
+    "raw_response": "",
+    "policy_evidence": {
+      "grounded": true,
+      "chunk_count": 4,
+      "chunks": [
+        {
+          "id": "embedding:6d62b3d8b8cf524f",
+          "source": "03_rate_limiting.txt",
+          "score": 0.3997,
+          "excerpt": "Policy-Name: Rate Limiting & Spike Arrest Policy\nPolicy-Version: 1.0\nEffective-Date: 2025-02-01\nCategory: rate_limiting\nApplies-To: all\n\nPolicy Name: Rate Limiting & Spike Arrest Policy v1.0\nMandatory Plugins to Comply to this policy: rate-limiting\nDescription: This policy define",
+          "truncated": true
+        },
+        {
+          "id": "embedding:e93d2b0342ac37a9",
+          "source": "kong_api_security_mapping.md",
+          "score": 0.3687,
+          "excerpt": "7001\nInternational standard for information security management systems. Emphasizes risk management, access control, and continuous improvement.\n\n### OWASP API Security Top 10\nCommunity-driven list of top API security risks including broken authentication, excessive data exposure",
+          "truncated": true
+        },
+        {
+          "id": "embedding:0b35a4b0fad5eaa0",
+          "source": "kong_api_security_mapping.md",
+          "score": 0.3021,
+          "excerpt": "ontent                 | Optional  | Optional  | Optional  | Optional    | Optional           | Optional   | Optional  | Optional  | Optional  |\n\n\n## API Security Standards Overview\n\n### GDPR (General Data Protection Regulation)\nEuropean Union regulation focused on data protectio",
+          "truncated": true
+        },
+        {
+          "id": "embedding:8a485170f218ba1a",
+          "source": "kong_api_security_mapping.md",
+          "score": 0.2996,
+          "excerpt": "# Kong Gateway Plugins vs API Security Standards\n\n| Plugin Name                 | Category           | Description                                        | GDPR      | HIPAA     | PCI-DSS   | ISO 27001   | OWASP API Top 10   | PSD2/SCA   | PIPEDA    | NIST      | SOC 2     |\n|:--",
+          "truncated": true
+        }
+      ]
+    },
+    "verification_summary": {
+      "status": "unverified",
+      "reason": "The audit produced no policies for this service."
+    }
+  },
+  "legacy-billing:policy:legacy-billing": {
+    "serviceName": "legacy-billing",
     "policies": [
       {
         "policy_name": "GDPR",
@@ -465,7 +433,7 @@
           "JWT Authentication",
           "OAuth2 / OpenID Connect"
         ],
-        "details": "Service has no plugins enabled; GDPR requires JWT Authentication and OAuth2 / OpenID Connect (both Mandatory per mapping) for secure handling of personal data.",
+        "details": "Enabled plugins [cors, request-transformer] do not include mandatory authentication plugins required for GDPR; JWT Authentication and OAuth2 / OpenID Connect are listed as Mandatory for GDPR.",
         "verification": {
           "status": "verified",
           "confidence": "high",
@@ -508,7 +476,10 @@
         }
       }
     ],
-    "service_plugins": [],
+    "service_plugins": [
+      "cors",
+      "request-transformer"
+    ],
     "policy_sources": [
       "kong_api_security_mapping.md"
     ],
@@ -519,28 +490,28 @@
         {
           "id": "embedding:e93d2b0342ac37a9",
           "source": "kong_api_security_mapping.md",
-          "score": 0.3843,
+          "score": 0.3523,
           "excerpt": "7001\nInternational standard for information security management systems. Emphasizes risk management, access control, and continuous improvement.\n\n### OWASP API Security Top 10\nCommunity-driven list of top API security risks including broken authentication, excessive data exposure",
           "truncated": true
         },
         {
           "id": "embedding:0b35a4b0fad5eaa0",
           "source": "kong_api_security_mapping.md",
-          "score": 0.3241,
+          "score": 0.313,
           "excerpt": "ontent                 | Optional  | Optional  | Optional  | Optional    | Optional           | Optional   | Optional  | Optional  | Optional  |\n\n\n## API Security Standards Overview\n\n### GDPR (General Data Protection Regulation)\nEuropean Union regulation focused on data protectio",
           "truncated": true
         },
         {
           "id": "embedding:8a485170f218ba1a",
           "source": "kong_api_security_mapping.md",
-          "score": 0.3047,
+          "score": 0.299,
           "excerpt": "# Kong Gateway Plugins vs API Security Standards\n\n| Plugin Name                 | Category           | Description                                        | GDPR      | HIPAA     | PCI-DSS   | ISO 27001   | OWASP API Top 10   | PSD2/SCA   | PIPEDA    | NIST      | SOC 2     |\n|:--",
           "truncated": true
         },
         {
           "id": "embedding:04543137e3e17b97",
           "source": "kong_api_security_mapping.md",
-          "score": 0.2912,
+          "score": 0.2586,
           "excerpt": "r API security. Emphasizes Zero Trust, DevSecOps, and lifecycle protection.\n\n### SOC 2\nUS standard for managing customer data based on five trust principles: security, availability, processing integrity, confidentiality, and privacy.",
           "truncated": false
         }

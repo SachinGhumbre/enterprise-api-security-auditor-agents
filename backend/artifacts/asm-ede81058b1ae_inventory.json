@@ -1,0 +1,85 @@
+{
+  "assessment_id": "asm-ede81058b1ae",
+  "kong_source": "kong_admin_api",
+  "kong_live": true,
+  "kong_stale": false,
+  "kong_snapshot_at": "2026-11-03T15:26:15.205607+00:00",
+  "kong_gaps": [],
+  "inventory": [
+    {
+      "service_name": "orders-api",
+      "service_id": "1d79ca18-deda-5a33-ab26-3576608c95f3",
+      "service_plugins": [
+        "ai-mcp-proxy"
+      ],
+      "route_count": 5,
+      "service_routes": [
+        {
+          "id": "35d1ac91-b313-5557-818a-f4e38c904136",
+          "name": "orders-api_listorders",
+          "paths": [
+            "~/orders$"
+          ],
+          "methods": [
+            "GET"
+          ],
+          "plugin_names": [
+            "ai-mcp-proxy"
+          ]
+        },
+        {
+          "id": "5bd8d943-95bb-5257-ae80-1cb044c1e1c6",
+          "name": "orders-api_getorder",
+          "paths": [
+            "~/orders/(?<orderid>[^#?/]+)$"
+          ],
+          "methods": [
+            "GET"
+          ],
+          "plugin_names": [
+            "ai-mcp-proxy"
+          ]
+        },
+        {
+          "id": "670fe309-eb29-57c1-a1f3-34696774a9a9",
+          "name": "orders-api_createorder",
+          "paths": [
+            "~/orders$"
+          ],
+          "methods": [
+            "POST"
+          ],
+          "plugin_names": [
+            "ai-mcp-proxy"
+          ]
+        },
+        {
+          "id": "94c46ea8-8c5c-57d9-8646-3b6b8a83a5dc",
+          "name": "orders-api_replaceorder",
+          "paths": [
+            "~/orders/(?<orderid>[^#?/]+)$"
+          ],
+          "methods": [
+            "PUT"
+          ],
+          "plugin_names": [
+            "ai-mcp-proxy"
+          ]
+        },
+        {
+          "id": "d9ac0c1b-9b03-52fd-8691-f331d87e3a1d",
+          "name": "orders-api_deleteorder",
+          "paths": [
+            "~/orders/(?<orderid>[^#?/]+)$"
+          ],
+          "methods": [
+            "DELETE"
+          ],
+          "plugin_names": [
+            "ai-mcp-proxy"
+          ]
+        }
+      ]
+    }
+  ]
+}

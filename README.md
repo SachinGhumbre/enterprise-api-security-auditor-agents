@@ -564,7 +564,7 @@ cd enterprise-api-security-auditor-agents
 **Option A — Docker (recommended)**
 
 ```powershell
-docker compose -f backend\docker-compose.yaml up -d
+docker compose -f backend\docker-compose_redis.yaml up -d
 docker ps   # confirm the `redis` container is running
 ```
 

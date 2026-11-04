@@ -1,0 +1,34 @@
+{
+  "assessment_id": "asm-5194ab033ca3",
+  "actions": 2,
+  "by_severity": {
+    "Medium": 1,
+    "Critical": 1
+  },
+  "risk": {
+    "Medium": 7,
+    "Low": 7
+  },
+  "validation_passed": true,
+  "change_proposals": 1,
+  "excluded": [],
+  "degraded_reasons": [
+    "discovery degraded: Inventory source is cached_file (stale: True); this is not a live assessment.",
+    "risk degraded: Risk explanation unavailable: Tool 'llm_risk_explain' failed: Model returned an empty risk explanation."
+  ],
+  "objective": "Full API security assessment",
+  "tiers": {
+    "confirmed": 0,
+    "suspected": 28,
+    "informational": 2,
+    "unverified": 0
+  },
+  "coverage_totals": {
+    "total": 54,
+    "satisfied": 6,
+    "partial": 3,
+    "unsatisfied": 23,
+    "not_evaluable": 22
+  },
+  "note": "Approval authorises export of this plan. Nothing is applied to Kong by this workflow."
+}
