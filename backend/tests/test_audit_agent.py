@@ -92,6 +92,27 @@ def test_perceive_falls_back_when_kong_unreachable(monkeypatch):
     assert state["kong_source"] in ("cached_file", "none")
     assert "Kong Admin API unreachable" in state["kong_warning"]
 
+def test_perceive_fallback_honours_service_names(monkeypatch, tmp_path):
+    """A scoped audit must stay scoped when Kong is unreachable."""
+    cached = [
+        {"service_name": "Alpha", "service_id": "a",
+         "service_plugins": ["key-auth"]},
+        {"service_name": "Beta", "service_id": "b",
+         "service_plugins": ["oauth2"]},
+    ]
+    fallback = tmp_path / "filtered_kong_data.json"
+    fallback.write_text(json.dumps(cached), encoding="utf-8")
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("connection refused")
+
+    monkeypatch.setattr(auditor_agent, "collect_kong_inventory", boom)
+    monkeypatch.setattr(auditor_agent, "FALLBACK_KONG_DATA", str(fallback))
+
+    state = auditor_agent.perceive_kong({"service_names": ["beta"]})
+    assert state["kong_source"] == "cached_file"
+    assert [s["service_name"] for s in state["kong_data"]] == ["Beta"]
+
 
 def test_retrieve_policies_attaches_context(stub_rag):
     state = auditor_agent.retrieve_policies({"kong_data": KONG_DATA})

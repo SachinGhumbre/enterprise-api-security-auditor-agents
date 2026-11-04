@@ -226,3 +226,6 @@ backend/.env
 # Node - never commit installed dependencies
 node_modules/
 
+# Local Docker CLI state (sandbox workaround) - never commit
+.docker-cfg/
+

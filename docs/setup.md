@@ -2,16 +2,36 @@
 
 ## Prerequisites
 
-| Requirement | Version | Notes |
-|---|---|---|
-| Python | 3.11+ | Tested on 3.14 |
-| Node.js | 18+ | Frontend build/dev |
-| Docker Desktop | latest | Only for local Redis |
-| Redis Stack | 7+ | Must include RediSearch |
-| Meta Model API key | — | Required for reasoning |
-| Kong Konnect / Gateway | — / 3.x | Optional; cached fallback exists |
+**Option 1 (Docker) is recommended** — one command, identical on Windows,
+macOS and Linux.
 
-## Install (PowerShell, repo root)
+| Requirement | Option 1: Docker (recommended) | Option 2: Manual |
+|---|---|---|
+| Docker Desktop | latest — the only install | only for local Redis |
+| Meta Model API key | **Required** — paste into `.env` | **Required** — paste into `backend/.env` |
+| Kong Konnect / Gateway | Optional; blank = sample inventory | Optional; cached fallback exists |
+| Python | not needed | 3.11+ (tested on 3.14) |
+| Node.js | not needed | 18+, frontend build/dev |
+| Redis Stack 7+ | bundled in the image | must include RediSearch |
+
+## Install — Option 1: Docker (recommended)
+
+```powershell
+# 1. Create .env from the template (REQUIRED), then set META_API_KEY inside.
+#    Kong is optional: leave KONG_ADMIN_API/KONG_ADMIN_TOKEN blank to audit
+#    the bundled sample inventory.
+copy .env.example .env   # macOS/Linux: cp .env.example .env
+
+# 2. Build and start the whole stack (Redis + 3 APIs + dashboard)
+docker compose up -d --build
+
+# 3. Open http://localhost:3000, sign in with operator / operator
+```
+
+`.env` changes apply with `docker compose restart` (no rebuild).
+First boot auto-ingests the policy corpus; watch `docker compose logs -f`.
+
+## Install — Option 2: Manual (PowerShell, repo root)
 
 ```powershell
 # 1. Redis Stack
@@ -37,7 +57,10 @@ cd ..
 
 ## Run
 
-One command (repo root, venv activated) starts everything in order —
+Docker: `docker compose up -d` to start, `docker compose down` to stop,
+`docker compose restart` after `.env` edits.
+
+Manual: one command (repo root, venv activated) starts everything in order —
 Redis harness, knowledge API, agents API, then the dashboard — waiting
 for each Python service to answer its health endpoint first. Services
 already running are detected and skipped.
@@ -58,6 +81,9 @@ cd frontend; npm start                   # :3000
 ```
 
 ## First run
+
+(Docker auto-ingests on first boot; manual installs run the ingest step
+below explicitly.)
 
 ```powershell
 # Health (open endpoints, no key needed)
@@ -94,3 +120,6 @@ Or do all of this from the dashboard's Investigation page.
   change window; default is simulation only.
 - Re-run `pip-audit -r backend/requirements.txt` on every dependency
   change (not run in this sandbox; see docs/application-security.md).
+- The Docker container is the same single-worker topology in a box:
+  restart loses in-flight runs and the run index; the Redis volume and
+  `backend/artifacts/` persist.

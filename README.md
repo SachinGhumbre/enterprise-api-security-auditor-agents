@@ -16,8 +16,8 @@ against GDPR, HIPAA, PCI-DSS, ISO 27001, OWASP API Top 10, PSD2/SCA, NIST and SO
 4. [Meta models in this project](#meta-models-in-this-project)
 5. [Architecture](#architecture)
 6. [Repository layout](#repository-layout)
-7. [Prerequisites (Windows)](#prerequisites-windows)
-8. [Installation (Windows)](#installation-windows)
+7. [Prerequisites](#prerequisites)
+8. [Installation](#installation)
 9. [Configuration](#configuration)
 10. [Running the stack](#running-the-stack)
 11. [API catalog](#api-catalog)
@@ -427,10 +427,14 @@ enterprise-api-security-auditor-agents/
 ├── README.md
 ├── redis-test.py                        # :5002  standalone Redis harness
 ├── start_all.py                         # one-command launcher: harness → knowledge → agents → dashboard
+├── Dockerfile                           # all-in-one image: Redis + 3 APIs + dashboard
+├── docker-compose.yml                   # single-container stack (recommended run)
+├── .env.example                         # config template -> copy to .env, set META_API_KEY
+├── docker/                              # entrypoint, supervisord, nginx, first-boot ingest
 ├── backend/
-│   ├── .env                             # all configuration lives here
+│   ├── .env                             # backend config (manual install)
 │   ├── requirements.txt
-│   ├── docker-compose.yaml              # Redis Stack
+│   ├── docker-compose_redis.yaml        # Redis Stack (manual install)
 │   ├── common/                          # shared layer
 │   │   ├── config.py                    #   env loading + effective config
 │   │   ├── auth.py                      #   API-key auth, viewer/operator/admin
@@ -472,28 +476,82 @@ enterprise-api-security-auditor-agents/
 
 ---
 
-## Prerequisites (Windows)
+## Prerequisites
 
-| Requirement | Version | Notes |
+Two ways to run the project. **Option 1 (Docker) is recommended** — one
+command, identical on Windows, macOS and Linux.
+
+| Requirement | Option 1: Docker (recommended) | Option 2: Manual |
 |---|---|---|
-| **Python** | 3.11+ | Tested on 3.14. `py --version` |
-| **Node.js** | 18+ | `node --version` |
-| **Docker Desktop** | latest | Only if running Redis locally |
-| **Redis Stack** | 7+ | **Must include the RediSearch module** |
-| **Meta Model API key** | — | **Required.** From the Meta Model API console |
-| **Kong Konnect** _or_ **Kong Gateway** | — / 3.x | Optional — the audit falls back to a cached inventory |
+| **Docker Desktop** | latest — the only install | only for local Redis |
+| **Meta Model API key** | **Required** — paste into `.env` | **Required** — paste into `backend/.env` |
+| **Kong Konnect** _or_ **Kong Gateway** | Optional — blank = sample inventory | Optional — blank = sample inventory |
+| **Python** | not needed | 3.11+ (tested on 3.14) |
+| **Node.js** | not needed | 18+, for the dashboard |
+| **Redis Stack 7+** | bundled in the image | **must include RediSearch** |
 
-> **Plain `redis` will not work.** Vector search needs the RediSearch module, which
-> ships in `redis/redis-stack-server`. Verify with `GET /api/v1/knowledge/health` — it
-> reports `search_module: true` when correct.
+> **Plain `redis` will not work for a manual install.** Vector search needs the
+> RediSearch module, which ships in `redis/redis-stack-server`. Verify with
+> `GET /api/v1/knowledge/health` — it reports `search_module: true` when
+> correct. The Docker image bundles Redis Stack, so this cannot go wrong there.
 
 ---
 
-## Installation (Windows)
+## Installation
+
+### Option 1 — Docker (recommended)
+
+One image runs the whole stack — Redis Stack, the three Flask APIs and the
+React dashboard — in a single container. Same commands on Windows
+(PowerShell), macOS and Linux.
+
+```powershell
+# 1. Clone and enter the project
+git clone <repo-url> enterprise-api-security-auditor-agents
+cd enterprise-api-security-auditor-agents
+
+# 2. Create your .env from the template (THIS FILE IS REQUIRED)
+copy .env.example .env   # macOS/Linux: cp .env.example .env
+
+# 3. Edit .env - Section 1 is the only required value:
+#      META_API_KEY = <key from https://dev.meta.ai/products/meta-model-api>
+#    Kong (Section 3) is optional: set KONG_ADMIN_API + KONG_ADMIN_TOKEN to
+#    audit a live estate, or leave both blank to audit the bundled 6-service
+#    sample inventory. Without Kong, audits still run end to end and every
+#    response says so (kong_source: cached_file, live: false).
+
+# 4. Build and start everything
+docker compose up -d --build
+
+# 5. Open the dashboard and sign in with operator / operator
+#    http://localhost:3000
+```
+
+The `.env` file is mounted into the container (read-only) and never baked
+into the image, so keys stay on your machine. `.env` changes apply with a
+plain `docker compose restart` — rebuilding is only needed when code
+changes. First boot takes a few minutes: the image builds, then the policy
+corpus auto-ingests (watch `docker compose logs -f`).
+
+| Command (repo root) | Purpose |
+|---|---|
+| `docker compose up -d` | Start after the first build |
+| `docker compose restart` | Pick up `.env` edits |
+| `docker compose logs -f` | Follow all five services |
+| `docker exec easa-all-in-one supervisorctl -c /app/docker/supervisord.conf status` | Process states |
+| `docker compose down` | Stop (data kept) |
+| `docker compose down -v` | Stop and wipe Redis data (re-ingests on next boot) |
+
+Ports `3000` (dashboard), `5000` (agents), `5001` (knowledge) and `5002`
+(harness) must be free. On Windows a stale local `npm start` or Flask
+process can silently shadow the container's ports — stop local services
+before testing Docker (see [Troubleshooting](#troubleshooting)).
+
+### Option 2 — Manual install (Windows)
 
 All commands are PowerShell, run from the repository root.
 
-### 1. Clone and enter the project
+#### 1. Clone and enter the project
 
 ```powershell
 cd C:\Users\<you>\projects
@@ -501,7 +559,7 @@ git clone <repo-url> enterprise-api-security-auditor-agents
 cd enterprise-api-security-auditor-agents
 ```
 
-### 2. Start Redis Stack
+#### 2. Start Redis Stack
 
 **Option A — Docker (recommended)**
 
@@ -520,7 +578,7 @@ docker exec -it redis redis-cli MODULE LIST
 # expect an entry with name "search"
 ```
 
-### 3. Create the Python virtual environment
+#### 3. Create the Python virtual environment
 
 ```powershell
 cd backend
@@ -533,12 +591,12 @@ python -m pip install -r requirements.txt
 > If PowerShell blocks activation:
 > `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`
 
-### 4. Configure `backend\.env`
+#### 4. Configure `backend\.env`
 
 See [Configuration](#configuration) below. At minimum set **`META_API_KEY`** and
 `REDIS_HOST`. Then confirm with `python backend\scripts\verify_meta.py`.
 
-### 5. Install frontend dependencies
+#### 5. Install frontend dependencies
 
 ```powershell
 cd frontend
@@ -550,8 +608,15 @@ cd ..
 
 ## Configuration
 
-Everything is read from **`backend\.env`**. It is loaded by absolute path, so services
-work no matter which directory you launch them from.
+**Docker:** everything lives in the single root **`.env`** (copy `.env.example`,
+set `META_API_KEY`). The container mounts it to `/app/backend/.env`, and
+Section 7 (dashboard logins/keys) is injected into the UI at startup.
+
+**Manual:** backend settings live in **`backend\.env`** (loaded by absolute
+path, so services work no matter which directory you launch them from) and
+dashboard settings in **`frontend\.env`**.
+
+The variables are the same in both cases:
 
 ### Redis
 
@@ -704,7 +769,16 @@ Last resort only: `KONG_ADMIN_VERIFY_SSL = false`.
 
 ## Running the stack
 
-One command starts everything in order (repo root, venv activated):
+**Docker (recommended):**
+
+```powershell
+docker compose up -d --build   # first run: build the image, boot all five services
+docker compose logs -f         # follow startup + first-boot ingest
+docker compose restart         # after any .env edit (no rebuild needed)
+docker compose down            # stop; data persists in volumes
+```
+
+**Manual:** one command starts everything in order (repo root, venv activated):
 
 ```powershell
 backend\.venv\Scripts\Activate.ps1
@@ -739,6 +813,9 @@ npm start
 Each service prints its effective configuration on startup.
 
 ### First-run order
+
+Docker ingests the corpus automatically on first boot (skip to step 4 to
+verify). Manual installs run the full order:
 
 ```powershell
 # 1. Confirm everything is wired up
@@ -978,6 +1055,13 @@ localhost. **Run Security Audit** stores its report in the `audit_report` variab
 
 ## Frontend
 
+**Docker:** the image builds and serves the production bundle on
+http://localhost:3000 — no Node needed. `REACT_APP_*` values come from
+Section 7 of the root `.env` at container startup; `docker compose restart`
+applies edits, never a rebuild.
+
+**Manual:**
+
 ```powershell
 cd frontend
 npm install
@@ -1102,6 +1186,11 @@ Full figures and what was *not* verified live: [test report](docs/test-report.md
 | Assessment says `cached` / `stale` | Kong was unreachable so discovery served the Redis snapshot. Check `snapshot_source` / `snapshot_age_s`; older than `KONG_SNAPSHOT_STALE_S` (1h) is flagged stale, never presented as live. |
 | `start_all.py` says a port is already held | A previous service window is still running (or stuck mid-startup). Close it and rerun — healthy services are detected and skipped. |
 | Launcher stops at one service with `failed to start` | It names the service and the reason. Read that service's own console window for the traceback; usually Redis is unreachable or a `backend/.env` value is missing. |
+| Container exits immediately with an `entrypoint ERROR` | No `.env` at the repo root. `copy .env.example .env`, set `META_API_KEY`, rerun `docker compose up -d`. |
+| `.env` edits have no effect in Docker | Services read config at startup: run `docker compose restart`. Rebuild only for code changes. |
+| `localhost:3000` shows the wrong dashboard in Docker | A stale local `npm start` is shadowing the container's port (Windows allows duplicate binds). Kill the `node` listener and hard-refresh. |
+| Start Docker over clean | `docker compose down -v` wipes Redis data (vectors, snapshots); the next boot re-ingests the corpus automatically. |
+| Inventory stuck on `redis_snapshot` after blanking Kong | A snapshot from an earlier live run outranks the sample file. Drop just the snapshot keys (vectors are kept): `docker exec easa-all-in-one /opt/redis-stack/bin/redis-cli DEL kong:snapshot:latest kong:snapshot:latest:previous` — the next read falls through to `cached_file`. |
 
 ---
 

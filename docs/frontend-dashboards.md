@@ -42,6 +42,10 @@ every number renders from a backend response or an explicit empty state.
 
 ## Run it
 
+Docker (recommended): the dashboard is served from the container at
+http://localhost:3000 after `docker compose up -d --build` — no `npm`
+needed. Manual:
+
 ```bash
 cd frontend && npm start   # http://localhost:3000
 ```

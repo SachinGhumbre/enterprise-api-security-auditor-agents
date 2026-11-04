@@ -1,0 +1,35 @@
+# Never bake secrets or local state into the image.
+.env
+*.env
+backend/.env
+frontend/.env
+
+# Dependencies and build outputs are recreated inside the image.
+node_modules/
+frontend/node_modules/
+frontend/build/
+.venv/
+venv/
+backend/.venv/
+backend/venv/
+
+# Caches, tests artefacts and generated data.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+backend/.pytest_cache/
+backend/pytest-of-sachi/
+backend/artifacts/
+pip-build-tracker-*/
+pip-ephem-wheel-cache-*/
+pip-install-*/
+
+# Not needed at runtime.
+.git/
+.gitignore
+docs/
+Demo Video/
+.idea/
+.vscode/
+*.log
+redis-data/

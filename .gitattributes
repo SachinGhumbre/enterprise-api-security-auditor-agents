@@ -1,0 +1,6 @@
+# Keep Unix line endings where they matter: a CRLF entrypoint.sh breaks the
+# container shebang on Windows checkouts (core.autocrlf), and stray CRs can
+# confuse supervisord/nginx parsing.
+*.sh text eol=lf
+docker/supervisord.conf text eol=lf
+docker/nginx.conf text eol=lf

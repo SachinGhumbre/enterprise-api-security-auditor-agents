@@ -340,4 +340,8 @@ def delete_all_embeddings():
 if __name__ == '__main__':
     # Threaded: the dashboard (StrictMode) fires concurrent probes; they must
     # not queue behind one stalled request on a single-threaded server.
-    app.run(debug=True, port=5002, threaded=True)
+    # Binds 0.0.0.0 so the service is reachable from outside the Docker
+    # container; the reloader stays on for local dev and is disabled in the
+    # image via REDIS_HARNESS_DEBUG=false.
+    _debug = os.getenv("REDIS_HARNESS_DEBUG", "true").lower() == "true"
+    app.run(host="0.0.0.0", debug=_debug, port=5002, threaded=True)

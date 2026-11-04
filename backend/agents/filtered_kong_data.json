@@ -18,5 +18,34 @@
       "rate-limiting",
       "ip-restriction"
     ]
+  },
+  {
+    "service_name": "payments-api",
+    "service_id": "a1b2c3d4-0000-4000-8000-000000000001",
+    "service_plugins": []
+  },
+  {
+    "service_name": "orders-api",
+    "service_id": "a1b2c3d4-0000-4000-8000-000000000002",
+    "service_plugins": [
+      "key-auth"
+    ]
+  },
+  {
+    "service_name": "customer-portal",
+    "service_id": "a1b2c3d4-0000-4000-8000-000000000003",
+    "service_plugins": [
+      "oauth2",
+      "rate-limiting",
+      "ip-restriction"
+    ]
+  },
+  {
+    "service_name": "legacy-billing",
+    "service_id": "a1b2c3d4-0000-4000-8000-000000000004",
+    "service_plugins": [
+      "cors",
+      "request-transformer"
+    ]
   }
 ]

@@ -1,0 +1,35 @@
+# Enterprise API Security Auditor - single-container stack.
+# Everything (Redis Stack, 3 Flask APIs, React dashboard) runs in ONE image.
+#
+# First start:
+#   1. cp .env.example .env
+#   2. Set META_API_KEY inside .env (required for audit/remediation/assistant).
+#   3. docker compose up -d --build
+#
+# Then open http://localhost:3000 (sign in with operator / operator).
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: enterprise-api-security-auditor:latest
+    container_name: easa-all-in-one
+    ports:
+      - "3000:3000"     # React dashboard
+      - "5000:5000"     # AI Agents API
+      - "5001:5001"     # Knowledge / RAG API
+      - "5002:5002"     # Redis harness
+    volumes:
+      # The ONLY required file: every service reads it (see .env.example).
+      - ./.env:/app/backend/.env:ro
+      # Drop extra policy docs here and re-ingest from the Knowledge page.
+      - ./backend/knowledge_base:/app/backend/knowledge_base
+      # Reports, snapshots and the audit log land on the host for inspection.
+      - ./backend/artifacts:/app/backend/artifacts
+      # Redis persistence (vectors survive restarts).
+      - redis-data:/data
+    restart: unless-stopped
+
+volumes:
+  redis-data:

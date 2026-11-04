@@ -1,7 +1,11 @@
 # Environment Reference
 
-Everything is read from `backend/.env` (absolute path, any launch
-directory). Generated from `backend/common/config.py`; defaults shown.
+**Docker (recommended):** everything is read from the single root `.env`
+(copy `.env.example`, set `META_API_KEY`) — the container mounts it to
+`/app/backend/.env`, dashboard Section 7 included. It is never baked into
+the image. **Manual:** backend settings come from `backend/.env`
+(absolute path, any launch directory) and dashboard settings from
+`frontend/.env`. Generated from `backend/common/config.py`; defaults shown.
 
 ## Auth & access
 
@@ -88,7 +92,9 @@ over `VECTOR_DIMENSIONS`); there is no embedding provider to configure.
 | `ARTIFACT_DIR` | `backend/artifacts` | Reports, snapshots, audit log |
 | `AGENTS_PORT` / `KNOWLEDGE_PORT` | `5000` / `5001` | Service ports (test harness is fixed at `5002`) |
 
-Frontend (`frontend/.env`, gitignored; see `frontend/.env.example`):
+Frontend — Docker: Section 7 of the root `.env`, injected into the UI at
+container startup (`docker compose restart` applies edits, never a
+rebuild). Manual (`frontend/.env`, gitignored; see `frontend/.env.example`):
 `REACT_APP_AGENTS_URL`, `REACT_APP_KNOWLEDGE_URL`,
 `REACT_APP_REDIS_TEST_URL`, `REACT_APP_API_KEY` (build-time fallback;
 sign-in preferred), plus demo login `REACT_APP_{ADMIN,OPERATOR,VIEWER}_PASSWORD`

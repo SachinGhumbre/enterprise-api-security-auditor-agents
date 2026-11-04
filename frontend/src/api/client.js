@@ -18,17 +18,33 @@
 // exist in the browser bundle (see readEnv in components/Login.jsx).
 const env = (typeof process.env !== 'undefined' && process.env) || {};
 
-export const AGENTS_URL = env.REACT_APP_AGENTS_URL || 'http://localhost:5000';
-export const KNOWLEDGE_URL = env.REACT_APP_KNOWLEDGE_URL || 'http://localhost:5001';
-export const REDIS_TEST_URL = env.REACT_APP_REDIS_TEST_URL || 'http://localhost:5002';
+// Docker runtime config: /runtime-config.js is rewritten from .env at
+// container startup, so URLs can change without rebuilding the image.
+// Local dev has no such file and falls back to REACT_APP_* below.
+const runtime =
+  (typeof window !== 'undefined' && window.__RUNTIME_CONFIG__) || {};
+
+function pickUrl(name, fallback) {
+  const fromRuntime = runtime[name];
+  if (fromRuntime !== undefined && fromRuntime !== null
+      && String(fromRuntime).trim() !== '') {
+    return String(fromRuntime).trim();
+  }
+  return env[name] || fallback;
+}
+
+export const AGENTS_URL = pickUrl('REACT_APP_AGENTS_URL', 'http://localhost:5000');
+export const KNOWLEDGE_URL = pickUrl('REACT_APP_KNOWLEDGE_URL', 'http://localhost:5001');
+export const REDIS_TEST_URL = pickUrl('REACT_APP_REDIS_TEST_URL', 'http://localhost:5002');
 
 const API_KEY_STORAGE = 'easa.api_key';
 
 export function getApiKey() {
+  const bakedKey = runtime.REACT_APP_API_KEY || env.REACT_APP_API_KEY || '';
   try {
-    return sessionStorage.getItem(API_KEY_STORAGE) || env.REACT_APP_API_KEY || '';
+    return sessionStorage.getItem(API_KEY_STORAGE) || bakedKey;
   } catch (err) {
-    return env.REACT_APP_API_KEY || '';
+    return bakedKey;
   }
 }
 

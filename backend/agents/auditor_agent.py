@@ -244,7 +244,16 @@ def perceive_kong(state: Dict[str, Any]) -> Dict[str, Any]:
         )
         try:
             with open(FALLBACK_KONG_DATA, "r", encoding="utf-8") as handle:
-                state["kong_data"] = json.load(handle)
+                cached = json.load(handle)
+            # Honour a service filter on the fallback path too, like the
+            # orchestrator does - otherwise a scoped audit silently audits
+            # the whole sample estate when Kong is unreachable.
+            wanted = state.get("service_names")
+            if wanted:
+                names = {str(n).lower() for n in wanted}
+                cached = [s for s in cached
+                          if str(s.get("service_name", "")).lower() in names]
+            state["kong_data"] = cached
             state["kong_source"] = "cached_file"
         except Exception as inner:
             state["kong_data"] = []

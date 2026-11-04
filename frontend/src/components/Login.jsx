@@ -14,6 +14,15 @@ const DEMO_ACCOUNTS = [
 ];
 
 function readEnv(name) {
+  // Docker runtime config first: /runtime-config.js is rewritten from .env at
+  // container startup. Local dev has no such file and falls through to the
+  // REACT_APP_* values baked in from frontend/.env.
+  const runtime = (typeof window !== 'undefined' && window.__RUNTIME_CONFIG__) || {};
+  const fromRuntime = runtime[name];
+  if (fromRuntime !== undefined && fromRuntime !== null
+      && String(fromRuntime).trim() !== '') {
+    return String(fromRuntime).trim();
+  }
   // Guard on `process.env`, never on bare `process`: webpack's DefinePlugin
   // inlines `process.env` as an object literal, but `process` itself does not
   // exist in the browser bundle, so a bare-process check is always false there
